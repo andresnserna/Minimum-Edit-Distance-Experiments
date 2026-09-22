@@ -1,0 +1,27 @@
+# Python bytecode and local artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Editor settings
+.vscode/
+.idea/
+
+# Local runtime output
+*.log
+counters.txt
+
+# Environment files
+.env
+.env.local
+
+# Packaging/build output
+build/
+dist/
+*.egg-info/

@@ -1,0 +1,16 @@
+[project]
+name = "edit-distance-project"
+version = "0.1.0"
+description = "Base scaffold for COSC 4367 Project 1 - Edit Distance"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+edit-distance = "edit_distance.__main__:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

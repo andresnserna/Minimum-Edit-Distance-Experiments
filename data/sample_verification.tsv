@@ -1,0 +1,13 @@
+# COSC 4367 Project 1 — sample correctness file
+# Format: A <TAB> B <TAB> expected_distance
+# Expected distances assume equal/unit costs (sub=1, ins=1, del=1).
+# Blank lines and lines beginning with '#' must be skipped.
+#
+# This is a sample. 
+# Empty-string cases are deliberately absent -- test those in your unit tests.
+
+kitten	sitting	3
+flaw	lawn	2
+intention	execution	5
+sunday	saturday	3
+park	spake	3
