@@ -15,8 +15,9 @@ This file is not responsible for:
 """
 
 from __future__ import annotations
-
 from .base import AlignmentResult, EditDistanceEngine
+from edit_distance.counters import Counters
+from edit_distance.time import TimeTracker
 
 
 class MemoizedEditDistance(EditDistanceEngine):

@@ -16,8 +16,16 @@ This file is not responsible for:
 """
 
 from __future__ import annotations
+from edit_distance.naive import NaiveEditDistance
 
 
-def test_placeholder() -> None:
-    """Temporary placeholder to keep the test module importable before implementation."""
-    assert True
+def test_kitten_to_sitting_distance() -> None:
+    """kitten -> sitting should have edit distance 3."""
+    result = NaiveEditDistance("kitten", "sitting", 1, 1, 1).compute()
+    assert result.distance == 3
+
+
+def test_flaw_to_lawn_distance() -> None:
+    """flaw -> lawn should have edit distance 2."""
+    result = NaiveEditDistance("flaw", "lawn", 1, 1, 1).compute()
+    assert result.distance == 2
