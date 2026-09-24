@@ -16,7 +16,6 @@ This file is not responsible for:
 """
 
 from __future__ import annotations
-from unittest import result
 from .base import AlignmentResult, EditDistanceEngine
 from edit_distance.counters import Counters
 from edit_distance.time import TimeTracker
@@ -41,9 +40,6 @@ class NaiveEditDistance(EditDistanceEngine):
         edit_script: List[str] = []
         alignment_lines: List[str] = []
         counters_summary = None
-
-        # VARIABLES FOR THIS FUNCTION
-        tie_break_option = None
 
     # NAIVE base case 1: if either string is empty
         if len(string_a) == 0: # ("", "abc") → distance = 3 insertions
