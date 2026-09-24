@@ -26,12 +26,12 @@ class NaiveEditDistance(EditDistanceEngine):
     """Recursive edit-distance engine using the straightforward recurrence."""
 
     def compute(self) -> AlignmentResult:
-        ## PRECONDITION: none, EditDistanceEngine constructor already validated the strings and costs
+        # PRECONDITION: none, EditDistanceEngine constructor already validated the strings and costs
         
         # INSTANTIATE Counters and Timer
-        counter = Counters()
         timer = TimeTracker()
         timer.start()
+        counter = Counters()
 
         # VARIABLES FOR RETURN
         string_a = self.string_a
@@ -41,6 +41,8 @@ class NaiveEditDistance(EditDistanceEngine):
         alignment_lines: List[str] = []
         counters_summary = None
 
+        counter.calls += 1 # "compute()" is the find() method here, so by entering it you call the func at least once, but for each recursive call this var will be incremented
+   
     # NAIVE base case 1: if either string is empty
         if len(string_a) == 0: # ("", "abc") → distance = 3 insertions
             # TODO: add counting here
@@ -65,8 +67,9 @@ class NaiveEditDistance(EditDistanceEngine):
     # NAIVE recursive case 1: if both strings are non-empty and do not match, but the first characters match
     # ("abc", "abd") → distance = 0 + recurse("bc", "bd")
             if string_a[0] == string_b[0]:
-                # TODO: add counting here
+                counter.record_character_equality_check()
                 # TODO: update edit_script and alignment_lines to reflect the insertions
+                
                 result = NaiveEditDistance(
                     string_a[1:], 
                     string_b[1:], 
@@ -111,6 +114,7 @@ class NaiveEditDistance(EditDistanceEngine):
                 sub_total = self.sub_cost + sub_result.distance
 
                 best_choice = self._best_choice(del_total, ins_total, sub_total)
+                counter.record_minimum_of_k(3) # finding minimum of the three values: del, ins, sub
 
                 if best_choice == "delete":
                     distance = del_total

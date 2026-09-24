@@ -17,14 +17,81 @@ class Counters:
         self.calls = 0
         self.total_operations = 0
 
-    def reset(self):
+    def _increment(self, *, reads: int = 0, writes: int = 0, comparisons: int = 0) -> None:
+        """Internal helper for counting a specific event by its exact resource cost."""
+        self.reads += reads
+        self.writes += writes
+        self.comparisons += comparisons
+        self.total_operations += reads + writes + comparisons
+
+    def reset(self) -> None:
         self.reads = 0
         self.writes = 0
         self.comparisons = 0
         self.calls = 0
         self.total_operations = 0
 
-    def check(self):
+    def record_table_or_memo_read(self) -> None:
+        """Count one DP-table or memo-cell read.
+
+        This event models a single read of an already-computed value from the DP
+        table or memo cache. It counts as 1 read and 1 total operation.
+        """
+        self._increment(reads=1)
+
+    def record_table_or_memo_write(self) -> None:
+        """Count one DP-table or memo-cell write.
+
+        This event models storing a newly computed value into the DP table or memo
+        cache. It counts as 1 write and 1 total operation.
+        """
+        self._increment(writes=1)
+
+    def record_character_read(self) -> None:
+        """Count one character read from an input string.
+
+        This event represents fetching a single character from A or B while
+        evaluating the recurrence. It counts as 1 read and 1 total operation.
+        """
+        self._increment(reads=1)
+
+    def record_character_equality_check(self) -> None:
+        """Count the cost of checking whether two characters are equal.
+
+        The comparison A[i] == B[j] requires reading both characters and then
+        comparing them. This contributes 2 reads, 1 comparison, and 3 total
+        operations.
+        """
+        self._increment(reads=2, comparisons=1)
+
+    def record_minimum_of_k(self, k: int) -> None:
+        """Count the comparison cost of taking the minimum of k candidate values.
+
+        A minimum over k values requires k - 1 comparisons. The function is used
+        for the event "take the minimum of k values" in the recurrence or DP
+        selection logic.
+
+        Args:
+            k: Number of candidate values being compared.
+
+        Raises:
+            ValueError: If k is less than 1, because there are no valid values to
+                compare.
+        """
+        if k < 1:
+            raise ValueError("k must be at least 1 when recording a minimum-of-k event.")
+        self._increment(comparisons=k - 1)
+
+    def record_base_case_initialization(self) -> None:
+        """Count a base-case cell initialization.
+
+        This event represents writing the sentinel or default value for a DP or
+        memo cell before a recurrence begins. It counts as 1 write and 1 total
+        operation.
+        """
+        self._increment(writes=1)
+
+    def check(self) -> bool:
         return self.total_operations == (self.reads + self.writes + self.comparisons)
 
     def as_dict(self):

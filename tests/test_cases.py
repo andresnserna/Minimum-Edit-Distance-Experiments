@@ -16,6 +16,7 @@ This file is not responsible for:
 """
 
 from __future__ import annotations
+from edit_distance.counters import Counters
 from edit_distance.naive import NaiveEditDistance
 
 
@@ -29,3 +30,22 @@ def test_flaw_to_lawn_distance() -> None:
     """flaw -> lawn should have edit distance 2."""
     result = NaiveEditDistance("flaw", "lawn", 1, 1, 1).compute()
     assert result.distance == 2
+
+
+def test_counter_methods() -> None:
+    """Each event-specific helper should increment the matching counter and total."""
+    counter = Counters()
+
+    counter.record_table_or_memo_read()
+    counter.record_table_or_memo_write()
+    counter.record_character_read()
+    counter.record_character_equality_check()
+    counter.record_minimum_of_k(4)
+    counter.record_base_case_initialization()
+
+    assert counter.reads == 4
+    assert counter.writes == 2
+    assert counter.comparisons == 4
+    assert counter.total_operations == 10
+    assert counter.check() is True
+    assert "DP table or memo cell" in counter.record_table_or_memo_read.__doc__
