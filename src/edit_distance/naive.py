@@ -32,6 +32,8 @@ class NaiveEditDistance(EditDistanceEngine):
         timer = TimeTracker()
         timer.start()
         counter = Counters()
+        counter.calls += 1 # "compute()" is the find() method here, so by entering it you call the func at least once, but for each recursive call this var will be incremented
+
 
         # VARIABLES FOR RETURN
         string_a = self.string_a
@@ -40,8 +42,6 @@ class NaiveEditDistance(EditDistanceEngine):
         edit_script: List[str] = []
         alignment_lines: List[str] = []
         counters_summary = None
-
-        counter.calls += 1 # "compute()" is the find() method here, so by entering it you call the func at least once, but for each recursive call this var will be incremented
    
     # NAIVE base case 1: if either string is empty
         if len(string_a) == 0: # ("", "abc") → distance = 3 insertions
@@ -69,7 +69,7 @@ class NaiveEditDistance(EditDistanceEngine):
             if string_a[0] == string_b[0]:
                 counter.record_character_equality_check()
                 # TODO: update edit_script and alignment_lines to reflect the insertions
-                
+
                 result = NaiveEditDistance(
                     string_a[1:], 
                     string_b[1:], 

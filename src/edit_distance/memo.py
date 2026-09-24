@@ -32,9 +32,10 @@ class MemoizedEditDistance(EditDistanceEngine):
         # the compute method is called to initialize the memoization table and start the recursive computation, the bulk of the work is done in the _distance method
        
         # INSTANTIATE Counters and Timer
-        counter = Counters()
         timer = TimeTracker()
         timer.start()
+        counter = Counters()
+        counter.calls += 1 # "compute()" is the find() method here, so by entering it you call the func at least once, but for each recursive call this var will be incremented
 
         # VARIABLES FOR RETURN
         string_a = self.string_a
@@ -47,10 +48,17 @@ class MemoizedEditDistance(EditDistanceEngine):
         # VARIABLES FOR THIS FUNCTION
         n = len(self.string_a)
         m = len(self.string_b)
-        self.memo = [[self.sentinel for _ in range(m + 1)] for _ in range(n + 1)]
+        # self.memo = [[self.sentinel for _ in range(m + 1)] for _ in range(n + 1)]
+        self.memo = []
+        for i in range(n + 1):
+            row = []
+            for j in range(m + 1):
+                row.append(self.sentinel)
+            self.memo.append(row)
+            counter.record_base_case_initialization()
 
     # MEMO: this is the recursive solver, that will fill in the memoization table as it goes to subproblems
-        distance = self._distance(0, 0)
+        distance = self._distance(0, 0, counter)
 
     # Conclusion: build the return object
         result = AlignmentResult(
@@ -65,7 +73,7 @@ class MemoizedEditDistance(EditDistanceEngine):
         timer.finish()
         return result
     
-    def _distance(self, m, n) -> int:
+    def _distance(self, m, n, counter: Counters) -> int:
     # MEMO base cases: one string is exhausted
         if m == len(self.string_a): # ("", "abc") → distance = 3 insertions
             return (len(self.string_b) - n) * self.ins_cost
@@ -75,12 +83,14 @@ class MemoizedEditDistance(EditDistanceEngine):
 
     # MEMO cache check
         if self.memo[m][n] != -1: # if the value has already been computed, return it
+            counter.record_table_or_memo_read()
             return self.memo[m][n]
 
     # MEMO match case
         # ("abc", "abd") → distance = 0 + recurse("bc", "bd"), 
         # this is where the subproblem is solved recursively, and the result is stored in the memoization table
         if self.string_a[m] == self.string_b[n]: 
+            counter.record_character_equality_check()
             distance = self._distance(m + 1, n + 1)
     # MEMO mismatch case
         # ("abc", "xyz") → distance = min(delete_cost, insert_cost, substitute_cost)
@@ -94,6 +104,8 @@ class MemoizedEditDistance(EditDistanceEngine):
 
             # CAUTION: tie breaker logic
             chosen_operation = self._best_choice(delete_cost, insert_cost, substitute_cost)
+            counter.record_minimum_of_k(3)
+
             if chosen_operation == "delete":
                 distance = delete_cost
             elif chosen_operation == "insert":
@@ -102,6 +114,7 @@ class MemoizedEditDistance(EditDistanceEngine):
                 distance = substitute_cost
 
         self.memo[m][n] = distance # add the computed distance to the memoization table for caching
+        counter.record_table_or_memo_write()
         return distance
 
     def _build_alignment(self, edit_script):
