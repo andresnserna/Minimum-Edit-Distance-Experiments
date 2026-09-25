@@ -91,16 +91,16 @@ class MemoizedEditDistance(EditDistanceEngine):
         # this is where the subproblem is solved recursively, and the result is stored in the memoization table
         if self.string_a[m] == self.string_b[n]: 
             counter.record_character_equality_check()
-            distance = self._distance(m + 1, n + 1)
+            distance = self._distance(m + 1, n + 1, counter)
     # MEMO mismatch case
         # ("abc", "xyz") → distance = min(delete_cost, insert_cost, substitute_cost)
-        ## delete_cost = self.del_cost + self._distance(m + 1, n)
-        ## insert_cost = self.ins_cost + self._distance(m, n + 1)
-        ## substitute_cost = self.sub_cost + self._distance(m + 1, n + 1)
+        ## delete_cost = self.del_cost + self._distance(m + 1, n, counter)
+        ## insert_cost = self.ins_cost + self._distance(m, n + 1, counter)
+        ## substitute_cost = self.sub_cost + self._distance(m + 1, n + 1, counter)
         else:  
-            delete_cost = self.del_cost + self._distance(m + 1, n)
-            insert_cost = self.ins_cost + self._distance(m, n + 1)
-            substitute_cost = self.sub_cost + self._distance(m + 1, n + 1)
+            delete_cost = self.del_cost + self._distance(m + 1, n, counter)
+            insert_cost = self.ins_cost + self._distance(m, n + 1, counter)
+            substitute_cost = self.sub_cost + self._distance(m + 1, n + 1, counter)
 
             # CAUTION: tie breaker logic
             chosen_operation = self._best_choice(delete_cost, insert_cost, substitute_cost)

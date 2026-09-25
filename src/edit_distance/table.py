@@ -28,14 +28,13 @@ class TabulatedEditDistance(EditDistanceEngine):
     def __init__(self, string_a, string_b, sub_cost=1, ins_cost=1, del_cost=1):
         super().__init__(string_a, string_b, sub_cost, ins_cost, del_cost)
         self.dp = None
-        self.sentinel = 0 # what we fill the memo table with by default
-
 
     def compute(self) -> AlignmentResult:
         # INSTANTIATE Counters and Timer
         counter = Counters()
         timer = TimeTracker()
         timer.start()
+        counter.calls += 1 # "compute()" is the find() method here, so by entering it you call the func at least once, but for each recursive call this var will be incremented
 
         # VARIABLES FOR RETURN
         string_a = self.string_a
@@ -48,18 +47,61 @@ class TabulatedEditDistance(EditDistanceEngine):
         # VARIABLES FOR THIS FUNCTION
         n = len(self.string_a)
         m = len(self.string_b)
-        self.dp = [[self.sentinel for _ in range(m + 1)] for _ in range(n + 1)]
+        self.dp = []
+        for i in range(n + 1):
+            row = []
+            for j in range(m + 1):
+                row.append(self.sentinel)
+            self.dp.append(row)
+            counter.record_base_case_initialization()
+
+    # set these values in the table first 
+        for j in range(1, m + 1):
+            self.dp[0][j] = j * self.ins_cost
+            counter.record_table_or_memo_write()
+
+        for i in range(1, n + 1):
+            self.dp[i][0] = i * self.del_cost
+            counter.record_table_or_memo_write()
 
     # TABLE: the loop that fills in our tabulation table so we can return the minimum edit distance from a to b at the last matrix square of dp
-        for i in range(1, m + 1):
-            for j in range(1, n + 1):
-                raise NotImplementedError
+        for i in range(1, n + 1):
+            for j in range(1, m + 1):
+                # get the previous cost, the following branches will need it
+                prev_cell_diag = self.dp[i - 1][j - 1]
+                prev_cell_left = self.dp[i - 1][j]
+                prev_cell_up = self.dp[i][j - 1]
+                counter.record_table_or_memo_read(3)
 
-        # TABLE base case 1: one string is empty
-        # TABLE match case: 
-        # TABLE mismatch case: 
+                # do the chars match at i?
+                if string_a[i - 1] == string_b[j - 1]:
+                    counter.record_character_equality_check()
+                    # yes, so update this cell with the previous cost, since it will not change, 
+                    distance = prev_cell_diag
+                # no they don't match, so we need to know what the cost of editing A to B is here
+                else:
+                    # lets gather our three possible choices
+                    delete_cost = self.del_cost + prev_cell_left
+                    insert_cost = self.ins_cost + prev_cell_up
+                    substitute_cost = self.sub_cost + prev_cell_diag
 
-        distance = self.dp[m][n] # after the big 'ol for-loop, the value at this cell in the matrix will have the minimum edit distance from a to b
+                    # lets take the lowest one
+                    chosen_operation = self._best_choice(delete_cost, insert_cost, substitute_cost)
+                    counter.record_minimum_of_k(3, 1)
+        
+                    if chosen_operation == "delete":
+                        distance = delete_cost
+                    elif chosen_operation == "insert":
+                        distance = insert_cost
+                    else: # substitute
+                        distance = substitute_cost
+
+                # record that distance to this cell of the dp table
+                self.dp[i][j] = distance
+                counter.record_table_or_memo_write()
+
+        distance = self.dp[n][m] # after the big 'ol for-loop, the value at this cell in the matrix will have the minimum edit distance from a to b
+        counter.record_table_or_memo_write()
 
     # Conclusion: build the return object
         result = AlignmentResult(
@@ -72,7 +114,7 @@ class TabulatedEditDistance(EditDistanceEngine):
         )
 
         timer.finish()
-        return result
-
+        return result        
+    
     def _build_alignment(self, edit_script):
         raise NotImplementedError

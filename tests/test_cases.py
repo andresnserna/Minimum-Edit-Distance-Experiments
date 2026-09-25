@@ -17,19 +17,49 @@ This file is not responsible for:
 
 from __future__ import annotations
 from edit_distance.counters import Counters
+from edit_distance.memo import MemoizedEditDistance
 from edit_distance.naive import NaiveEditDistance
+from edit_distance.table import TabulatedEditDistance
 
 
 def test_kitten_to_sitting_distance() -> None:
     """kitten -> sitting should have edit distance 3."""
-    result = NaiveEditDistance("kitten", "sitting", 1, 1, 1).compute()
-    assert result.distance == 3
+    expected = 3
+    naive_result = NaiveEditDistance("kitten", "sitting", 1, 1, 1).compute()
+    memo_result = MemoizedEditDistance("kitten", "sitting", 1, 1, 1).compute()
+    table_result = TabulatedEditDistance("kitten", "sitting", 1, 1, 1).compute()
+
+    results = {
+        "naive": naive_result.distance,
+        "memo": memo_result.distance,
+        "table": table_result.distance,
+    }
+    mismatched = [name for name, value in results.items() if value != expected]
+    if mismatched:
+        raise AssertionError(
+            f"Expected all algorithms to return {expected} for kitten->sitting, "
+            f"but failed: {', '.join(f'{name}={results[name]}' for name in mismatched)}"
+        )
 
 
 def test_flaw_to_lawn_distance() -> None:
     """flaw -> lawn should have edit distance 2."""
-    result = NaiveEditDistance("flaw", "lawn", 1, 1, 1).compute()
-    assert result.distance == 2
+    expected = 2
+    naive_result = NaiveEditDistance("flaw", "lawn", 1, 1, 1).compute()
+    memo_result = MemoizedEditDistance("flaw", "lawn", 1, 1, 1).compute()
+    table_result = TabulatedEditDistance("flaw", "lawn", 1, 1, 1).compute()
+
+    results = {
+        "naive": naive_result.distance,
+        "memo": memo_result.distance,
+        "table": table_result.distance,
+    }
+    mismatched = [name for name, value in results.items() if value != expected]
+    if mismatched:
+        raise AssertionError(
+            f"Expected all algorithms to return {expected} for flaw->lawn, "
+            f"but failed: {', '.join(f'{name}={results[name]}' for name in mismatched)}"
+        )
 
 
 def test_counter_methods() -> None:

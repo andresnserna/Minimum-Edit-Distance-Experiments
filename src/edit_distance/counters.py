@@ -31,40 +31,43 @@ class Counters:
         self.calls = 0
         self.total_operations = 0
 
-    def record_table_or_memo_read(self) -> None:
-        """Count one DP-table or memo-cell read.
+    def record_table_or_memo_read(self, value: int = 1) -> None:
+        """Count one DP table or memo cell read.
 
         This event models a single read of an already-computed value from the DP
-        table or memo cache. It counts as 1 read and 1 total operation.
+        table or memo cache. It counts as 1 read and 1 total operation per unit
+        of value, with a default of 1.
         """
-        self._increment(reads=1)
+        self._increment(reads=value)
 
-    def record_table_or_memo_write(self) -> None:
-        """Count one DP-table or memo-cell write.
+    def record_table_or_memo_write(self, value: int = 1) -> None:
+        """Count one DP table or memo cell write.
 
         This event models storing a newly computed value into the DP table or memo
-        cache. It counts as 1 write and 1 total operation.
+        cache. It counts as 1 write and 1 total operation per unit of value, with
+        a default of 1.
         """
-        self._increment(writes=1)
+        self._increment(writes=value)
 
-    def record_character_read(self) -> None:
+    def record_character_read(self, value: int = 1) -> None:
         """Count one character read from an input string.
 
         This event represents fetching a single character from A or B while
-        evaluating the recurrence. It counts as 1 read and 1 total operation.
+        evaluating the recurrence. It counts as 1 read and 1 total operation per
+        unit of value, with a default of 1.
         """
-        self._increment(reads=1)
+        self._increment(reads=value)
 
-    def record_character_equality_check(self) -> None:
+    def record_character_equality_check(self, value: int = 1) -> None:
         """Count the cost of checking whether two characters are equal.
 
         The comparison A[i] == B[j] requires reading both characters and then
         comparing them. This contributes 2 reads, 1 comparison, and 3 total
-        operations.
+        operations per unit of value, with a default of 1.
         """
-        self._increment(reads=2, comparisons=1)
+        self._increment(reads=2 * value, comparisons=value)
 
-    def record_minimum_of_k(self, k: int) -> None:
+    def record_minimum_of_k(self, k: int, value: int = 1) -> None:
         """Count the comparison cost of taking the minimum of k candidate values.
 
         A minimum over k values requires k - 1 comparisons. The function is used
@@ -73,6 +76,8 @@ class Counters:
 
         Args:
             k: Number of candidate values being compared.
+            value: Number of repeated minimum-of-k events to count. The cost is
+                scaled by this multiplier, with a default of 1.
 
         Raises:
             ValueError: If k is less than 1, because there are no valid values to
@@ -80,16 +85,16 @@ class Counters:
         """
         if k < 1:
             raise ValueError("k must be at least 1 when recording a minimum-of-k event.")
-        self._increment(comparisons=k - 1)
+        self._increment(comparisons=(k - 1) * value)
 
-    def record_base_case_initialization(self) -> None:
+    def record_base_case_initialization(self, value: int = 1) -> None:
         """Count a base-case cell initialization.
 
         This event represents writing the sentinel or default value for a DP or
         memo cell before a recurrence begins. It counts as 1 write and 1 total
-        operation.
+        operation per unit of value, with a default of 1.
         """
-        self._increment(writes=1)
+        self._increment(writes=value)
 
     def check(self) -> bool:
         return self.total_operations == (self.reads + self.writes + self.comparisons)
