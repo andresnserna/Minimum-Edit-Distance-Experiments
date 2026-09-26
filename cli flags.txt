@@ -1,0 +1,31 @@
+4367 proj 1 edit distance
+
+cli flags 
+
+
+--input FILE
+Path to a TSV input file: required
+
+--sub N
+Substitution cost
+default: 1
+
+--ins N
+Insertion cost
+default: 1
+
+--del N
+Deletion cost
+default: 1
+
+--impl
+Which implementation to run: naive (A1), memo (A2), table (АЗ)
+default: table
+
+--verbose
+Also print the alignment block for each pair
+default: off
+
+--counters
+Also emit a counter summary per pair, to counters.txt
+default: off

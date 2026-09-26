@@ -28,6 +28,7 @@ class TabulatedEditDistance(EditDistanceEngine):
     def __init__(self, string_a, string_b, sub_cost=1, ins_cost=1, del_cost=1):
         super().__init__(string_a, string_b, sub_cost, ins_cost, del_cost)
         self.dp = None
+        self.sentinel = 0
 
     def compute(self) -> AlignmentResult:
         # INSTANTIATE Counters and Timer

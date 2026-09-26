@@ -16,6 +16,5 @@ This file is not responsible for:
 
 from edit_distance.__main__ import main
 
-
 if __name__ == "__main__":
     raise SystemExit(main())

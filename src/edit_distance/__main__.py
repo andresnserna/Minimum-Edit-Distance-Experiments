@@ -16,10 +16,13 @@ This file is not responsible for:
 
 from __future__ import annotations
 
+from .cli import EditDistanceCLI
+
 
 def main() -> int:
     """Entry point for the package-level executable."""
-    raise NotImplementedError
+    cli = EditDistanceCLI()
+    return cli.run()
 
 
 if __name__ == "__main__":

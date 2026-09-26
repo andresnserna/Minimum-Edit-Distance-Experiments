@@ -79,3 +79,91 @@ def test_counter_methods() -> None:
     assert counter.total_operations == 10
     assert counter.check() is True
     assert "DP table or memo cell" in counter.record_table_or_memo_read.__doc__
+
+def test_emptyA_to_stringB() -> None:
+    """ "" -> creek should have edit distance 5, and be all inserts. this test must return the right distance AND edit script to pass"""
+    string_a = ""
+    string_b = "creek"
+    expected = 5
+    test_case_name = "\"\" -> creek"
+
+    naive_result = NaiveEditDistance(string_a, string_b, 1, 1, 1).compute()
+    memo_result = MemoizedEditDistance(string_a, string_b, 1, 1, 1).compute()
+    table_result = TabulatedEditDistance(string_a, string_b, 1, 1, 1).compute()
+
+    distance_results = {
+        "naive": naive_result.distance,
+        "memo": memo_result.distance,
+        "table": table_result.distance,
+    }
+    edit_script_results = {
+        "naive": naive_result.edit_script,
+        "memo": memo_result.edit_script,
+        "table": table_result.edit_script,
+    }
+    mismatched_distances = [name for name, value in distance_results.items() if value != expected]
+    mismatched_scripts = [name for name, value in edit_script_results.items() if value != expected]
+
+    if mismatched_distances or mismatched_scripts:
+        raise AssertionError(
+            # TODO: show that it was the distance or script that mismatched, how do i do both without clogging the terminal with empty stuff, do i combine both?
+            f"Expected all algorithms to return {expected} for {test_case_name}, "
+            f"but failed: {', '.join(f'{name}={results[name]}' for name in mismatched)}"
+        )
+
+def test_stringA_to_emptyB() -> None:
+    """ girl -> "" should have edit distance 4."""
+    string_a = "girl"
+    string_b = ""
+    expected = 4
+    test_case_name = "girl -> \"\""
+
+    naive_result = NaiveEditDistance(string_a, string_b, 1, 1, 1).compute()
+    memo_result = MemoizedEditDistance(string_a, string_b, 1, 1, 1).compute()
+    table_result = TabulatedEditDistance(string_a, string_b, 1, 1, 1).compute()
+
+    distance_results = {
+        "naive": naive_result.distance,
+        "memo": memo_result.distance,
+        "table": table_result.distance,
+    }
+    edit_script_results = {
+        "naive": naive_result.edit_script,
+        "memo": memo_result.edit_script,
+        "table": table_result.edit_script,
+    }
+    mismatched_distances = [name for name, value in distance_results.items() if value != expected]
+    mismatched_scripts = [name for name, value in edit_script_results.items() if value != expected]
+
+    if mismatched_distances or mismatched_scripts:
+        raise AssertionError(
+            # TODO: show that it was the distance or script that mismatched, how do i do both without clogging the terminal with empty stuff, do i combine both?
+            f"Expected all algorithms to return {expected} for {test_case_name}, "
+            f"but failed: {', '.join(f'{name}={results[name]}' for name in mismatched)}"
+        )
+
+def test_null_to_stringB() -> None:
+    """ *null* -> "slayyy" should raise an error about missing args."""
+
+    string_a = None
+    string_b = "slayyy"
+    expected = None #the right type of error, NONE IS WRONG
+    test_case_name = "*null* -> \"slayyy\""
+
+    naive_result = NaiveEditDistance(string_a, string_b, 1, 1, 1).compute()
+    memo_result = MemoizedEditDistance(string_a, string_b, 1, 1, 1).compute()
+    table_result = TabulatedEditDistance(string_a, string_b, 1, 1, 1).compute()
+
+    results = {
+        "naive": naive_result.distance,
+        "memo": memo_result.distance,
+        "table": table_result.distance,
+    }
+
+    mismatched = [name for name, value in results.items() if value != expected]
+
+    if mismatched:
+        raise AssertionError(
+            f"Expected all algorithms to return {expected} for {test_case_name}, "
+            f"but failed: {', '.join(f'{name}={results[name]}' for name in mismatched)}"
+        )

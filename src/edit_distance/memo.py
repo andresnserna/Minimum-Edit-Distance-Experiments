@@ -74,6 +74,7 @@ class MemoizedEditDistance(EditDistanceEngine):
         return result
     
     def _distance(self, m, n, counter: Counters) -> int:
+        counter.calls += 1
     # MEMO base cases: one string is exhausted
         if m == len(self.string_a): # ("", "abc") → distance = 3 insertions
             return (len(self.string_b) - n) * self.ins_cost
