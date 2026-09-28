@@ -67,7 +67,7 @@ class MemoizedEditDistance(EditDistanceEngine):
             distance=distance,
             edit_script=edit_script,
             alignment_lines=alignment_lines,
-            counters_summary=counters_summary
+            counters_summary = counter.as_dict()
         )
         
         timer.finish()

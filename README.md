@@ -71,12 +71,8 @@ From the project root:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-python -m edit_distance --help
+PYTHONPATH=src python -m edit_distance
 ```
 
 ## Notes
-
-- No external dependencies are required for the base implementation.
-- The project is intentionally scaffolded for Python, matching the assignment’s language options.
-- This is a starting point only; algorithms, counters, and reconstruction logic are intentionally left for the implementation phase.
+- the quick start instructions are for checkpoint #1 only

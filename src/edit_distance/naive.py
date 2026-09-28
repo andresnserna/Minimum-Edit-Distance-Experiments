@@ -45,22 +45,17 @@ class NaiveEditDistance(EditDistanceEngine):
    
     # NAIVE base case 1: if either string is empty
         if len(string_a) == 0: # ("", "abc") → distance = 3 insertions
-            # TODO: add counting here
             # TODO: update edit_script and alignment_lines to reflect the insertions
-
             distance = len(string_b) * self.ins_cost
 
         elif len(string_b) == 0: # ("abc", "") → distance = 3 deletions
-            # TODO: add counting here
             # TODO: update edit_script and alignment_lines to reflect the insertions
-
             distance = len(string_a) * self.del_cost
 
     # NAIVE base case 2: if both strings match
         elif string_a == string_b: # ("abc", "abc") → distance = 0
-            # TODO: add counting here
+            counter.record_string_equality_check(string_a, string_b)
             # TODO: update edit_script and alignment_lines to reflect the insertions
-
             distance = 0
 
         else:
@@ -83,7 +78,6 @@ class NaiveEditDistance(EditDistanceEngine):
     # NAIVE recursive case 2: both strings are non-empty, do not match, and the first characters do not match
     # ("abc", "xyz") → distance = local_lowest_cost + recurse("bc", "yz")
     # local_cost + recursive_cost(child)
-                # TODO: add counting here
                 # TODO: update edit_script and alignment_lines to reflect the insertions
                 del_result = NaiveEditDistance(
                     string_a[1:], 
@@ -131,7 +125,7 @@ class NaiveEditDistance(EditDistanceEngine):
             distance=distance,
             edit_script=edit_script,
             alignment_lines=alignment_lines,
-            counters_summary=counters_summary,
+            counters_summary = counter.as_dict()
         )
         timer.finish()
         return result

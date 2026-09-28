@@ -16,11 +16,14 @@ This file is not responsible for:
 """
 
 from __future__ import annotations
+import io
+import contextlib
+
 from edit_distance.counters import Counters
 from edit_distance.memo import MemoizedEditDistance
 from edit_distance.naive import NaiveEditDistance
 from edit_distance.table import TabulatedEditDistance
-
+from edit_distance.__main__ import main
 
 def test_kitten_to_sitting_distance() -> None:
     """kitten -> sitting should have edit distance 3."""
@@ -167,3 +170,20 @@ def test_null_to_stringB() -> None:
             f"Expected all algorithms to return {expected} for {test_case_name}, "
             f"but failed: {', '.join(f'{name}={results[name]}' for name in mismatched)}"
         )
+
+
+def test_checkpoint1_output_script() -> None:
+    """The project should print verification rows for each sample pair and algorithm."""
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        exit_code = main()
+
+    assert exit_code == 0
+    rows = output.getvalue().strip().splitlines()
+    assert len(rows) == 15 # because testing 3 algorithms, 5 tests in each
+    for row in rows:
+        columns = row.split("\t")
+        assert len(columns) == 5
+        assert columns[0] in {"naive", "memo", "table"}
+        assert columns[3].isdigit()
+        assert columns[4].isdigit()

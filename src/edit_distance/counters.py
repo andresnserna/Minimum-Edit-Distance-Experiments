@@ -67,11 +67,15 @@ class Counters:
         """
         self._increment(reads=2 * value, comparisons=value)
 
-    def record_string_equalty_check() -> None:
+    def record_string_equality_check(self, string_a: str, string_b: str) -> None:
         """
-        # does x number of CHAR equality checks where x is the shortests string
+        does x number of CHAR equality checks where x is the shortests string
         """
-        raise NotImplementedError
+        chars_checked = min(len(string_a), len(string_b))
+        self.record_minimum_of_k(2) #finding the minimum len between string A and B
+        self.record_character_equality_check(chars_checked) # record a char equality check x amount of times, where x is the len of the shorter string
+
+
 
     def record_minimum_of_k(self, k: int, value: int = 1) -> None:
         """Count the comparison cost of taking the minimum of k candidate values.
