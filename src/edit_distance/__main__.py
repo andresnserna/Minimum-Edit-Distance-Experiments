@@ -23,7 +23,6 @@ from .memo import MemoizedEditDistance
 from .naive import NaiveEditDistance
 from .table import TabulatedEditDistance
 
-
 def main() -> int:
 
     """Minimal checkpoint-1 verification script.

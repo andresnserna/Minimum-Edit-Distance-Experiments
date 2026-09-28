@@ -187,3 +187,22 @@ def test_checkpoint1_output_script() -> None:
         assert columns[0] in {"naive", "memo", "table"}
         assert columns[3].isdigit()
         assert columns[4].isdigit()
+
+def test_beer_to_beans_distance() -> None:
+    """beer -> beans should have edit distance 2."""
+    expected = 2
+    naive_result = NaiveEditDistance("beer", "beans", 1, 1, 1).compute()
+    memo_result = MemoizedEditDistance("beer", "beans", 1, 1, 1).compute()
+    table_result = TabulatedEditDistance("beer", "beans", 1, 1, 1).compute()
+
+    results = {
+        "naive": naive_result.distance,
+        "memo": memo_result.distance,
+        "table": table_result.distance,
+    }
+    mismatched = [name for name, value in results.items() if value != expected]
+    if mismatched:
+        raise AssertionError(
+            f"Expected all algorithms to return {expected} for beer -> beans, "
+            f"but failed: {', '.join(f'{name}={results[name]}' for name in mismatched)}"
+        )

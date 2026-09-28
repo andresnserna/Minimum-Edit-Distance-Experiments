@@ -71,6 +71,8 @@ class MemoizedEditDistance(EditDistanceEngine):
         )
         
         timer.finish()
+        # TESTING FOR CHK 1... REMOVE FOR FINAL
+        self._print_matrix("Memo table:", self.memo)
         return result
     
     def _distance(self, m, n, counter: Counters) -> int:
@@ -116,6 +118,8 @@ class MemoizedEditDistance(EditDistanceEngine):
 
         self.memo[m][n] = distance # add the computed distance to the memoization table for caching
         counter.record_table_or_memo_write()
+        # TESTING FOR CHK 1... REMOVE FOR FINAL
+        self._print_matrix("Memo table:", self.memo)
         return distance
 
     def _build_alignment(self, edit_script):

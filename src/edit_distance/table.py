@@ -100,6 +100,8 @@ class TabulatedEditDistance(EditDistanceEngine):
                 # record that distance to this cell of the dp table
                 self.dp[i][j] = distance
                 counter.record_table_or_memo_write()
+                # TESTING FOR CHK 1... REMOVE FOR FINAL
+                self._print_matrix("DP table:", self.dp)
 
         distance = self.dp[n][m] # after the big 'ol for-loop, the value at this cell in the matrix will have the minimum edit distance from a to b
         counter.record_table_or_memo_write()
@@ -115,6 +117,8 @@ class TabulatedEditDistance(EditDistanceEngine):
         )
 
         timer.finish()
+        # TESTING FOR CHK 1... REMOVE FOR FINAL
+        self._print_matrix("DP table:", self.dp)
         return result        
     
     def _build_alignment(self, edit_script):

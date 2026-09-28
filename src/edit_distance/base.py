@@ -81,6 +81,20 @@ class EditDistanceEngine:
             return "insert"
         return "substitute"
 
+    @staticmethod
+    def _print_matrix(label: str, matrix: List[List[int]]) -> None:
+        """Print a numeric matrix in a readable console format."""
+        print(f"\n{label}")
+        if not matrix:
+            print("  <empty>")
+            return
+
+        width = max(len(str(value)) for row in matrix for value in row)
+        print("     " + " ".join(f"{j:>{width}}" for j in range(len(matrix[0]))))
+        for i, row in enumerate(matrix):
+            print(f"{i:>2}  " + " ".join(f"{value:>{width}}" for value in row))
+
+
 class EditDistanceResultFormatter:
     """Helper responsible only for formatting the final output rows."""
 
