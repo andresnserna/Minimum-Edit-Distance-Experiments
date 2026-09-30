@@ -15,8 +15,12 @@ This file is not responsible for:
 """
 
 from __future__ import annotations
+
+import warnings
 from pathlib import Path
 from typing import List, Tuple
+
+from .base import AlignmentResult
 
 
 class InputParser:
@@ -69,6 +73,23 @@ class OutputWriter:
     """Encapsulates the formatting and writing of final result lines."""
 
     @staticmethod
-    def write_counters(path: str | Path, summary: dict) -> None:
-        """Write a single line summary to the counters file."""
-        raise NotImplementedError
+    def write_counters(path: str | Path, result: AlignmentResult) -> None:
+        """
+        Write a single line summary to the counters file. \n
+        format: A   B   distance \n
+        (only called when the --counters flag is enabled)
+        """
+        output_path = Path(path)
+        if output_path.suffix.lower() != ".txt":
+            warnings.warn(
+                f"Counters were not written: expected a .txt file, got {output_path}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
+            
+            return
+
+        line = f"{result.string_a}\t{result.string_b}\t{result.distance}\n"
+
+        with output_path.open("a", encoding="utf-8") as output_file:
+            output_file.write(line)

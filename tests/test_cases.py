@@ -19,11 +19,23 @@ from __future__ import annotations
 import io
 import contextlib
 
+import pytest
+
+from edit_distance.base import AlignmentResult
 from edit_distance.counters import Counters
+from edit_distance.io import OutputWriter
 from edit_distance.memo import MemoizedEditDistance
 from edit_distance.naive import NaiveEditDistance
 from edit_distance.table import TabulatedEditDistance
 from edit_distance.__main__ import main
+
+
+def assert_distance(test_case_name: str, expected: int, results: dict[str, int]) -> None:
+    mismatched = {name: value for name, value in results.items() if value != expected}
+    assert not mismatched, (
+        f"Expected distance {expected} for {test_case_name}; "
+        f"mismatched results: {mismatched}"
+    )
 
 def test_kitten_to_sitting_distance() -> None:
     """kitten -> sitting should have edit distance 3."""
@@ -44,7 +56,6 @@ def test_kitten_to_sitting_distance() -> None:
             f"but failed: {', '.join(f'{name}={results[name]}' for name in mismatched)}"
         )
 
-
 def test_flaw_to_lawn_distance() -> None:
     """flaw -> lawn should have edit distance 2."""
     expected = 2
@@ -63,7 +74,6 @@ def test_flaw_to_lawn_distance() -> None:
             f"Expected all algorithms to return {expected} for flaw->lawn, "
             f"but failed: {', '.join(f'{name}={results[name]}' for name in mismatched)}"
         )
-
 
 def test_counter_methods() -> None:
     """Each event-specific helper should increment the matching counter and total."""
@@ -99,20 +109,7 @@ def test_emptyA_to_stringB() -> None:
         "memo": memo_result.distance,
         "table": table_result.distance,
     }
-    edit_script_results = {
-        "naive": naive_result.edit_script,
-        "memo": memo_result.edit_script,
-        "table": table_result.edit_script,
-    }
-    mismatched_distances = [name for name, value in distance_results.items() if value != expected]
-    mismatched_scripts = [name for name, value in edit_script_results.items() if value != expected]
-
-    if mismatched_distances or mismatched_scripts:
-        raise AssertionError(
-            # TODO: show that it was the distance or script that mismatched, how do i do both without clogging the terminal with empty stuff, do i combine both?
-            f"Expected all algorithms to return {expected} for {test_case_name}, "
-            f"but failed: {', '.join(f'{name}={results[name]}' for name in mismatched)}"
-        )
+    assert_distance(test_case_name, expected, distance_results)
 
 def test_stringA_to_emptyB() -> None:
     """ girl -> "" should have edit distance 4."""
@@ -130,57 +127,27 @@ def test_stringA_to_emptyB() -> None:
         "memo": memo_result.distance,
         "table": table_result.distance,
     }
-    edit_script_results = {
-        "naive": naive_result.edit_script,
-        "memo": memo_result.edit_script,
-        "table": table_result.edit_script,
-    }
-    mismatched_distances = [name for name, value in distance_results.items() if value != expected]
-    mismatched_scripts = [name for name, value in edit_script_results.items() if value != expected]
-
-    if mismatched_distances or mismatched_scripts:
-        raise AssertionError(
-            # TODO: show that it was the distance or script that mismatched, how do i do both without clogging the terminal with empty stuff, do i combine both?
-            f"Expected all algorithms to return {expected} for {test_case_name}, "
-            f"but failed: {', '.join(f'{name}={results[name]}' for name in mismatched)}"
-        )
+    assert_distance(test_case_name, expected, distance_results)
 
 def test_null_to_stringB() -> None:
-    """ *null* -> "slayyy" should raise an error about missing args."""
+    """Each engine should reject None as an input string."""
+    engines = (NaiveEditDistance, MemoizedEditDistance, TabulatedEditDistance)
 
-    string_a = None
-    string_b = "slayyy"
-    expected = None #the right type of error, NONE IS WRONG
-    test_case_name = "*null* -> \"slayyy\""
-
-    naive_result = NaiveEditDistance(string_a, string_b, 1, 1, 1).compute()
-    memo_result = MemoizedEditDistance(string_a, string_b, 1, 1, 1).compute()
-    table_result = TabulatedEditDistance(string_a, string_b, 1, 1, 1).compute()
-
-    results = {
-        "naive": naive_result.distance,
-        "memo": memo_result.distance,
-        "table": table_result.distance,
-    }
-
-    mismatched = [name for name, value in results.items() if value != expected]
-
-    if mismatched:
-        raise AssertionError(
-            f"Expected all algorithms to return {expected} for {test_case_name}, "
-            f"but failed: {', '.join(f'{name}={results[name]}' for name in mismatched)}"
-        )
-
+    for engine in engines:
+        with pytest.raises(TypeError):
+            engine(None, "slayyy", 1, 1, 1).compute()
 
 def test_checkpoint1_output_script() -> None:
     """The project should print verification rows for each sample pair and algorithm."""
     output = io.StringIO()
+
     with contextlib.redirect_stdout(output):
         exit_code = main()
 
     assert exit_code == 0
     rows = output.getvalue().strip().splitlines()
     assert len(rows) == 15 # because testing 3 algorithms, 5 tests in each
+
     for row in rows:
         columns = row.split("\t")
         assert len(columns) == 5
@@ -189,20 +156,73 @@ def test_checkpoint1_output_script() -> None:
         assert columns[4].isdigit()
 
 def test_beer_to_beans_distance() -> None:
-    """beer -> beans should have edit distance 2."""
-    expected = 2
-    naive_result = NaiveEditDistance("beer", "beans", 1, 1, 1).compute()
-    memo_result = MemoizedEditDistance("beer", "beans", 1, 1, 1).compute()
-    table_result = TabulatedEditDistance("beer", "beans", 1, 1, 1).compute()
+    """Beer to beans should have edit distance 3."""
+    string_a = "beer"
+    string_b = "beans"
+    expected = 3
+    test_case_name = "beer -> beans"
 
-    results = {
+    naive_result = NaiveEditDistance(string_a, string_b, 1, 1, 1).compute()
+    memo_result = MemoizedEditDistance(string_a, string_b, 1, 1, 1).compute()
+    table_result = TabulatedEditDistance(string_a, string_b, 1, 1, 1).compute()
+
+    distance_results = {
         "naive": naive_result.distance,
         "memo": memo_result.distance,
         "table": table_result.distance,
     }
-    mismatched = [name for name, value in results.items() if value != expected]
-    if mismatched:
-        raise AssertionError(
-            f"Expected all algorithms to return {expected} for beer -> beans, "
-            f"but failed: {', '.join(f'{name}={results[name]}' for name in mismatched)}"
-        )
+    assert_distance(test_case_name, expected, distance_results)
+
+def test_write_counters(tmp_path) -> None:
+    """
+    Test that the summary output is of the right format, and that the counters file that was written to is in the right format \n
+    Output format: A    B   distance
+    """
+    result = AlignmentResult(string_a="A", string_b="B", distance=1)
+    counters_path = tmp_path / "counters.txt"
+
+    OutputWriter.write_counters(counters_path, result)
+    OutputWriter.write_counters(str(counters_path), result)
+
+    assert counters_path.read_text(encoding="utf-8") == "A\tB\t1\nA\tB\t1\n"
+
+    invalid_path = tmp_path / "counters.tsv"
+    with pytest.warns(RuntimeWarning, match="expected a .txt file"):
+        OutputWriter.write_counters(invalid_path, result)
+    assert not invalid_path.exists()
+
+def test_singleA_to_stringB() -> None:
+    """ a -> clock should have edit distance 5, and be [edit script]. this test must return the right distance AND edit script to pass"""
+    string_a = "a"
+    string_b = "clock"
+    expected = 5
+    test_case_name = "a -> clock"
+
+    naive_result = NaiveEditDistance(string_a, string_b, 1, 1, 1).compute()
+    memo_result = MemoizedEditDistance(string_a, string_b, 1, 1, 1).compute()
+    table_result = TabulatedEditDistance(string_a, string_b, 1, 1, 1).compute()
+
+    distance_results = {
+        "naive": naive_result.distance,
+        "memo": memo_result.distance,
+        "table": table_result.distance,
+    }
+    assert_distance(test_case_name, expected, distance_results)
+
+def test_stringA_to_singleB() -> None:
+    """ clock -> a should have edit distance 5, and be [edit script]. this test must return the right distance AND edit script to pass"""
+    string_a = "clock"
+    string_b = "a"
+    expected = 5
+    test_case_name = "clock -> a"
+
+    naive_result = NaiveEditDistance(string_a, string_b, 1, 1, 1).compute()
+    memo_result = MemoizedEditDistance(string_a, string_b, 1, 1, 1).compute()
+    table_result = TabulatedEditDistance(string_a, string_b, 1, 1, 1).compute()
+
+    distance_results = {
+        "naive": naive_result.distance,
+        "memo": memo_result.distance,
+        "table": table_result.distance,
+    }
+    assert_distance(test_case_name, expected, distance_results)
