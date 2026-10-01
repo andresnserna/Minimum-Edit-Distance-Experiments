@@ -16,11 +16,7 @@ This file is not responsible for:
 """
 
 from __future__ import annotations
-import io
-import contextlib
-
 import pytest
-
 from edit_distance.base import AlignmentResult
 from edit_distance.counters import Counters
 from edit_distance.io import OutputWriter
@@ -28,7 +24,8 @@ from edit_distance.memo import MemoizedEditDistance
 from edit_distance.naive import NaiveEditDistance
 from edit_distance.table import TabulatedEditDistance
 from edit_distance.__main__ import main
-
+import io
+import contextlib
 
 def assert_distance(test_case_name: str, expected: int, results: dict[str, int]) -> None:
     mismatched = {name: value for name, value in results.items() if value != expected}
@@ -137,23 +134,23 @@ def test_null_to_stringB() -> None:
         with pytest.raises(TypeError):
             engine(None, "slayyy", 1, 1, 1).compute()
 
-def test_checkpoint1_output_script() -> None:
-    """The project should print verification rows for each sample pair and algorithm."""
-    output = io.StringIO()
+# def test_checkpoint1_output_script() -> None:
+#     """The project should print verification rows for each sample pair and algorithm."""
+#     output = io.StringIO()
 
-    with contextlib.redirect_stdout(output):
-        exit_code = main()
+#     with contextlib.redirect_stdout(output):
+#         exit_code = main()
 
-    assert exit_code == 0
-    rows = output.getvalue().strip().splitlines()
-    assert len(rows) == 15 # because testing 3 algorithms, 5 tests in each
+#     assert exit_code == 0
+#     rows = output.getvalue().strip().splitlines()
+#     assert len(rows) == 15 # because testing 3 algorithms, 5 tests in each
 
-    for row in rows:
-        columns = row.split("\t")
-        assert len(columns) == 5
-        assert columns[0] in {"naive", "memo", "table"}
-        assert columns[3].isdigit()
-        assert columns[4].isdigit()
+#     for row in rows:
+#         columns = row.split("\t")
+#         assert len(columns) == 5
+#         assert columns[0] in {"naive", "memo", "table"}
+#         assert columns[3].isdigit()
+#         assert columns[4].isdigit()
 
 def test_beer_to_beans_distance() -> None:
     """Beer to beans should have edit distance 3."""
@@ -178,7 +175,9 @@ def test_write_counters(tmp_path) -> None:
     Test that the summary output is of the right format, and that the counters file that was written to is in the right format \n
     Output format: A    B   distance
     """
-    result = AlignmentResult(string_a="A", string_b="B", distance=1)
+    string_a = "A"
+    string_b = "B"
+    result = AlignmentResult(string_a, string_b, distance=1)
     counters_path = tmp_path / "counters.txt"
 
     OutputWriter.write_counters(counters_path, result)
@@ -190,6 +189,35 @@ def test_write_counters(tmp_path) -> None:
     with pytest.warns(RuntimeWarning, match="expected a .txt file"):
         OutputWriter.write_counters(invalid_path, result)
     assert not invalid_path.exists()
+
+def test_write_counters2(tmp_path) -> None:
+    """
+    Test that the summary output is of the right format, and that the counters file that was written to is in the right format \n
+    Output format: A    B   distance \n
+    this test if for cat -> bar
+    """
+    string_a = "cat"
+    string_b = "bar"
+    distance = 2
+    result = AlignmentResult(string_a, string_b, distance)
+    counters_path = tmp_path / "counters.txt"
+
+    OutputWriter.write_counters(counters_path, result)
+    OutputWriter.write_counters(str(counters_path), result)
+
+    assert counters_path.read_text(encoding="utf-8") == "cat\tbar\t2\ncat\tbar\t2\n"
+
+    invalid_path = tmp_path / "counters.tsv"
+    with pytest.warns(RuntimeWarning, match="expected a .txt file"):
+        OutputWriter.write_counters(invalid_path, result)
+    assert not invalid_path.exists()
+
+def test_algo_and_script() -> None:
+    """
+      test the algorithms, and test that they wrote the right edit script
+    """
+
+    raise NotImplementedError
 
 def test_singleA_to_stringB() -> None:
     """ a -> clock should have edit distance 5, and be [edit script]. this test must return the right distance AND edit script to pass"""

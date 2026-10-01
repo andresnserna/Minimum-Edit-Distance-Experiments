@@ -101,10 +101,12 @@ class TabulatedEditDistance(EditDistanceEngine):
                 self.dp[i][j] = distance
                 counter.record_table_or_memo_write()
                 # TESTING FOR CHK 1... REMOVE FOR FINAL
-                self._print_matrix("DP table:", self.dp)
+                # self._print_matrix("DP table:", self.dp)
 
         distance = self.dp[n][m] # after the big 'ol for-loop, the value at this cell in the matrix will have the minimum edit distance from a to b
         counter.record_table_or_memo_write()
+        edit_script = self._reconstruct_edit_script()
+        alignment_lines = self._build_alignment(edit_script)
 
     # Conclusion: build the return object
         result = AlignmentResult(
@@ -118,8 +120,37 @@ class TabulatedEditDistance(EditDistanceEngine):
 
         timer.finish()
         # TESTING FOR CHK 1... REMOVE FOR FINAL
-        self._print_matrix("DP table:", self.dp)
+        # self._print_matrix("DP table:", self.dp)
         return result        
     
-    def _build_alignment(self, edit_script):
-        raise NotImplementedError
+    def _reconstruct_edit_script(self) -> List[str]:
+        operations: List[str] = []
+        index_a = len(self.string_a)
+        index_b = len(self.string_b)
+
+        while index_a > 0 and index_b > 0:
+            if self.string_a[index_a - 1] == self.string_b[index_b - 1]:
+                operations.append(".")
+                index_a -= 1
+                index_b -= 1
+                continue
+
+            delete_total = self.del_cost + self.dp[index_a - 1][index_b]
+            insert_total = self.ins_cost + self.dp[index_a][index_b - 1]
+            substitute_total = self.sub_cost + self.dp[index_a - 1][index_b - 1]
+            choice = self._best_choice(delete_total, insert_total, substitute_total)
+
+            if choice == "delete":
+                operations.append("D")
+                index_a -= 1
+            elif choice == "insert":
+                operations.append("I")
+                index_b -= 1
+            else:
+                operations.append("S")
+                index_a -= 1
+                index_b -= 1
+
+        operations.extend(["D"] * index_a)
+        operations.extend(["I"] * index_b)
+        return list(reversed(operations))

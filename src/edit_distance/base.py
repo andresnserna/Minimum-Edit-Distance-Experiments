@@ -66,7 +66,33 @@ class EditDistanceEngine:
 
     def _build_alignment(self, edit_script: List[str]) -> List[str]:
         """Convert an edit script into the three-line block required by the assignment."""
-        raise NotImplementedError
+        aligned_a: List[str] = []
+        aligned_b: List[str] = []
+        operations: List[str] = []
+        index_a = 0
+        index_b = 0
+
+        for operation in edit_script:
+            if operation in {".", "S"}:
+                aligned_a.append(self.string_a[index_a])
+                aligned_b.append(self.string_b[index_b])
+                operations.append(operation)
+                index_a += 1
+                index_b += 1
+            elif operation == "D":
+                aligned_a.append(self.string_a[index_a])
+                aligned_b.append("-")
+                operations.append(operation)
+                index_a += 1
+            elif operation == "I":
+                aligned_a.append("-")
+                aligned_b.append(self.string_b[index_b])
+                operations.append(operation)
+                index_b += 1
+            else:
+                raise ValueError(f"Unknown edit operation: {operation!r}")
+
+        return [" ".join(aligned_a), " ".join(aligned_b), " ".join(operations)]
     
     def _best_choice(self, del_total: int, ins_total: int, sub_total: int) -> str:
         """

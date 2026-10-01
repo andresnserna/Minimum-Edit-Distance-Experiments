@@ -59,6 +59,8 @@ class MemoizedEditDistance(EditDistanceEngine):
 
     # MEMO: this is the recursive solver, that will fill in the memoization table as it goes to subproblems
         distance = self._distance(0, 0, counter)
+        edit_script = self._reconstruct_edit_script()
+        alignment_lines = self._build_alignment(edit_script)
 
     # Conclusion: build the return object
         result = AlignmentResult(
@@ -72,7 +74,7 @@ class MemoizedEditDistance(EditDistanceEngine):
         
         timer.finish()
         # TESTING FOR CHK 1... REMOVE FOR FINAL
-        self._print_matrix("Memo table:", self.memo)
+        # self._print_matrix("Memo table:", self.memo)
         return result
     
     def _distance(self, m, n, counter: Counters) -> int:
@@ -119,8 +121,46 @@ class MemoizedEditDistance(EditDistanceEngine):
         self.memo[m][n] = distance # add the computed distance to the memoization table for caching
         counter.record_table_or_memo_write()
         # TESTING FOR CHK 1... REMOVE FOR FINAL
-        self._print_matrix("Memo table:", self.memo)
+        # self._print_matrix("Memo table:", self.memo)
         return distance
 
-    def _build_alignment(self, edit_script):
-        raise NotImplementedError
+    def _reconstruct_edit_script(self) -> List[str]:
+        operations: List[str] = []
+        index_a = 0
+        index_b = 0
+        length_a = len(self.string_a)
+        length_b = len(self.string_b)
+
+        def cached_distance(row: int, column: int) -> int:
+            if row == length_a:
+                return (length_b - column) * self.ins_cost
+            if column == length_b:
+                return (length_a - row) * self.del_cost
+            return self.memo[row][column]
+
+        while index_a < length_a and index_b < length_b:
+            if self.string_a[index_a] == self.string_b[index_b]:
+                operations.append(".")
+                index_a += 1
+                index_b += 1
+                continue
+
+            delete_total = self.del_cost + cached_distance(index_a + 1, index_b)
+            insert_total = self.ins_cost + cached_distance(index_a, index_b + 1)
+            substitute_total = self.sub_cost + cached_distance(index_a + 1, index_b + 1)
+            choice = self._best_choice(delete_total, insert_total, substitute_total)
+
+            if choice == "delete":
+                operations.append("D")
+                index_a += 1
+            elif choice == "insert":
+                operations.append("I")
+                index_b += 1
+            else:
+                operations.append("S")
+                index_a += 1
+                index_b += 1
+
+        operations.extend(["D"] * (length_a - index_a))
+        operations.extend(["I"] * (length_b - index_b))
+        return operations

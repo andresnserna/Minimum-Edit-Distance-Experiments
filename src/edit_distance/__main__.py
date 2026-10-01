@@ -15,7 +15,7 @@ This file is not responsible for:
 """
 
 from __future__ import annotations
-
+from typing import Sequence
 from pathlib import Path
 from .cli import EditDistanceCLI
 from .io import InputParser
@@ -50,6 +50,9 @@ def main() -> int:
 #     cli = EditDistanceCLI()
 #     return cli.run()
 
+def main(argv: Sequence[str] | None = None) -> int:
+    """Run the command-line interface."""
+    return EditDistanceCLI().run(argv)
 
 if __name__ == "__main__":
     raise SystemExit(main())

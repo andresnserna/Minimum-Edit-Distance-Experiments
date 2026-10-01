@@ -45,26 +45,24 @@ class NaiveEditDistance(EditDistanceEngine):
    
     # NAIVE base case 1: if either string is empty
         if len(string_a) == 0: # ("", "abc") → distance = 3 insertions
-            # TODO: update edit_script and alignment_lines to reflect the insertions
             distance = len(string_b) * self.ins_cost
+            edit_script = ["I"] * len(string_b)
 
         elif len(string_b) == 0: # ("abc", "") → distance = 3 deletions
-            # TODO: update edit_script and alignment_lines to reflect the insertions
             distance = len(string_a) * self.del_cost
+            edit_script = ["D"] * len(string_a)
 
     # NAIVE base case 2: if both strings match
         elif string_a == string_b: # ("abc", "abc") → distance = 0
             counter.record_string_equality_check(string_a, string_b)
-            # TODO: update edit_script and alignment_lines to reflect the insertions
             distance = 0
+            edit_script = ["."] * len(string_a)
 
         else:
     # NAIVE recursive case 1: if both strings are non-empty and do not match, but the first characters match
     # ("abc", "abd") → distance = 0 + recurse("bc", "bd")
             if string_a[0] == string_b[0]:
                 counter.record_character_equality_check()
-                # TODO: update edit_script and alignment_lines to reflect the insertions
-
                 result = NaiveEditDistance(
                     string_a[1:], 
                     string_b[1:], 
@@ -73,12 +71,12 @@ class NaiveEditDistance(EditDistanceEngine):
                     self.del_cost
                 ).compute()
                 distance = result.distance
+                edit_script = ["."] + result.edit_script
 
             else: 
     # NAIVE recursive case 2: both strings are non-empty, do not match, and the first characters do not match
     # ("abc", "xyz") → distance = local_lowest_cost + recurse("bc", "yz")
     # local_cost + recursive_cost(child)
-                # TODO: update edit_script and alignment_lines to reflect the insertions
                 del_result = NaiveEditDistance(
                     string_a[1:], 
                     string_b, 
@@ -112,10 +110,15 @@ class NaiveEditDistance(EditDistanceEngine):
 
                 if best_choice == "delete":
                     distance = del_total
+                    edit_script = ["D"] + del_result.edit_script
                 elif best_choice == "insert":
                     distance = ins_total
+                    edit_script = ["I"] + ins_result.edit_script
                 else:
                     distance = sub_total
+                    edit_script = ["S"] + sub_result.edit_script
+
+        alignment_lines = self._build_alignment(edit_script)
 
 
         # Conclusion: build the return object
@@ -130,5 +133,3 @@ class NaiveEditDistance(EditDistanceEngine):
         timer.finish()
         return result
 
-    def _build_alignment(self, edit_script):
-        raise NotImplementedError
