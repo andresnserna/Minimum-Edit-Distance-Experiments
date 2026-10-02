@@ -22,3 +22,20 @@
 # These two implementations compute the same recurrence and will have very similar operation
 # counts. If your implementations are correct, the operation counts should be similar, but what
 # about their run times? The number of cells allocated?
+
+from study.study import Study
+from edit_distance.counters import Counters
+from edit_distance.time import TimeTracker
+from edit_distance.memo import MemoizedEditDistance
+from edit_distance.table import TabulatedEditDistance
+
+class CaseB3(Study):
+    def run(self) -> None:
+        # Run naive and memoized implementations, collect results, plot them.
+        ...
+
+def main() -> None:
+    CaseB3().run()
+
+if __name__ == "__main__":
+    main()

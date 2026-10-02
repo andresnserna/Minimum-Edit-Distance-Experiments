@@ -32,16 +32,21 @@ class NaiveEditDistance(EditDistanceEngine):
         timer = TimeTracker()
         timer.start()
         counter = Counters()
-        counter.calls += 1 # "compute()" is the find() method here, so by entering it you call the func at least once, but for each recursive call this var will be incremented
+        try:
+            result = self.compute_helper(counter)
+            timer.finish()
+            return result
+        finally:
+            counter.reset()
 
-
-        # VARIABLES FOR RETURN
+    def compute_helper(self, counter: Counters) -> AlignmentResult:
+        counter.calls += 1
         string_a = self.string_a
         string_b = self.string_b
         distance = 0
         edit_script: List[str] = []
-        alignment_lines: List[str] = []
-        counters_summary = None
+        # alignment_lines: List[str] = []
+        # counters_summary = None
    
     # NAIVE base case 1: if either string is empty
         if len(string_a) == 0: # ("", "abc") → distance = 3 insertions
@@ -69,7 +74,7 @@ class NaiveEditDistance(EditDistanceEngine):
                     self.sub_cost, 
                     self.ins_cost, 
                     self.del_cost
-                ).compute()
+                ).compute_helper(counter)
                 distance = result.distance
                 edit_script = ["."] + result.edit_script
 
@@ -83,7 +88,7 @@ class NaiveEditDistance(EditDistanceEngine):
                     self.sub_cost, 
                     self.ins_cost, 
                     self.del_cost
-                ).compute()
+                ).compute_helper(counter)
 
                 ins_result = NaiveEditDistance(
                     string_a, 
@@ -91,7 +96,7 @@ class NaiveEditDistance(EditDistanceEngine):
                     self.sub_cost, 
                     self.ins_cost, 
                     self.del_cost
-                ).compute()
+                ).compute_helper(counter)
 
                 sub_result = NaiveEditDistance(
                     string_a[1:], 
@@ -99,7 +104,7 @@ class NaiveEditDistance(EditDistanceEngine):
                     self.sub_cost, 
                     self.ins_cost, 
                     self.del_cost
-                ).compute()
+                ).compute_helper(counter)
 
                 del_total = self.del_cost + del_result.distance
                 ins_total = self.ins_cost + ins_result.distance
@@ -118,18 +123,12 @@ class NaiveEditDistance(EditDistanceEngine):
                     distance = sub_total
                     edit_script = ["S"] + sub_result.edit_script
 
-        alignment_lines = self._build_alignment(edit_script)
-
-
-        # Conclusion: build the return object
-        result = AlignmentResult(
+        return AlignmentResult(
             string_a=string_a,
             string_b=string_b,
             distance=distance,
             edit_script=edit_script,
-            alignment_lines=alignment_lines,
-            counters_summary = counter.as_dict()
+            alignment_lines=self._build_alignment(edit_script),
+            counters_summary=counter.as_dict(),
         )
-        timer.finish()
-        return result
 

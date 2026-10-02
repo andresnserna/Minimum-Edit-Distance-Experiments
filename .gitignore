@@ -25,3 +25,6 @@ counters.txt
 build/
 dist/
 *.egg-info/
+
+# study files
+study/results/

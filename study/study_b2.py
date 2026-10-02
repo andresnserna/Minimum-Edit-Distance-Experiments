@@ -19,5 +19,18 @@
 # Plot total_operations against n on log-log axes. Do the same for run time 
 # (separate graphs of course). When does the ratio between consecutive points stabilize (if it does)?
 
-import study
-from edit_distance import time, counters
+from study.study import Study
+from edit_distance.counters import Counters
+from edit_distance.time import TimeTracker
+from edit_distance.table import TabulatedEditDistance
+
+class CaseB2(Study):
+    def run(self) -> None:
+        # Run naive and memoized implementations, collect results, plot them.
+        ...
+
+def main() -> None:
+    CaseB2().run()
+
+if __name__ == "__main__":
+    main()
