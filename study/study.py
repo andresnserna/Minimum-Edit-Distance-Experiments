@@ -9,11 +9,17 @@
 # when I have 50 Google Chrome tabs open, I might expect a difference in performance, etc.
 
 from __future__ import annotations
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from numbers import Real
+from typing import List, Literal
+import random
 from pathlib import Path
+from matplotlib.figure import Figure
 from matplotlib import pyplot as plt
 
 class Study:
+   eng_alphabet_low = [chr(i) for i in range(ord('a'), ord('z') + 1)]
+   default_seed = 4367
 
    def __init__(self):
       pass
@@ -30,26 +36,54 @@ class Study:
       title: str,
       x_label: str,
       y_label: str,
+      x_scale: Literal["linear", "log"] = "linear",
+      y_scale: Literal["linear", "log"] = "linear",
+      y_limits: tuple[float | None, float | None] | None = None,
       reference_line: tuple[float, str] | None = None,
-   ) -> None:
-      plt.figure()
+   ) -> Figure:
+      figure, axes = plt.subplots()
       for label, x_values, y_values, style in series:
-         plt.plot(x_values, y_values, style, label=label)
+         axes.plot(x_values, y_values, style, label=label)
 
       if reference_line is not None:
          value, label = reference_line
-         plt.axhline(value, color="red", linestyle="--", label=label)
+         axes.axhline(value, color="red", linestyle="--", label=label)
 
-      plt.xlabel(x_label)
-      plt.ylabel(y_label)
-      plt.title(title)
-      plt.grid(True, alpha=0.3)
-      plt.legend()
-      plt.tight_layout()
-      plt.savefig(output_path, dpi=160)
-      plt.close()
+      axes.set_xlabel(x_label)
+      axes.set_ylabel(y_label)
+      axes.set_title(title)
+      axes.set_xscale(x_scale)
+      axes.set_yscale(y_scale)
+      if y_limits is not None:
+         axes.set_ylim(*y_limits)
+      axes.grid(True, alpha=0.3)
+      axes.legend()
+      figure.tight_layout()
+      figure.savefig(output_path, dpi=160)
+      return figure
 
-   def rand_word(alphabet: List, length: int, seed: int | None) -> str:
+   @staticmethod
+   def build_series(label: str, data: Sequence[Mapping[str, object]], x_field: str, y_field: str, style: str) -> tuple[str, list[float], list[float], str]:
+      x_values = []
+      y_values = []
+
+      for row in data:
+         x_value = row[x_field]
+         y_value = row[y_field]
+
+         if not isinstance(x_value, Real) or not isinstance(y_value, Real):
+            raise TypeError(
+               f"Series '{label}' requires numeric values for "
+               f"'{x_field}' and '{y_field}'"
+            )
+
+         x_values.append(float(x_value))
+         y_values.append(float(y_value))
+
+      return (label, x_values, y_values, style)
+
+
+   def rand_word(alphabet: List[str], length: int, seed: int | None) -> str:
       """
       given an alphabet, the target length, generate a random word. this will be used for edge cases, 
       and the seed is possible to be sent in as well for reproduceability, but can use the machine's 
@@ -57,7 +91,13 @@ class Study:
       """
       random_word = ""
 
-      # impl
+      if seed is not None:
+         random.seed(seed)
+      else:
+         random.seed()
+
+      for _ in range(length):
+         random_word += random.choice(alphabet)
 
       return random_word
    

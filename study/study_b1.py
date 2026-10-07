@@ -33,7 +33,7 @@ INPUT_LENGTHS = range(1, 21)
 IMPRACTICAL_THRESHOLD = 30
 COUNTER_FIELDS = ("reads", "writes", "comparisons", "calls", "total_operations")
 
-def _run_naive_worker(connection: Connection, string_a: str, string_b: str) -> None:
+def _run_thread_worker(connection: Connection, string_a: str, string_b: str) -> None:
    connection.send(("started",))
    started_at = time.perf_counter()
    try:
@@ -46,7 +46,7 @@ def _run_naive_worker(connection: Connection, string_a: str, string_b: str) -> N
       connection.close()
 
 
-def _run_naive_with_timeout(
+def _run_b1_with_timeout(
    string_a: str,
    string_b: str,
    timeout_seconds: float,
@@ -54,7 +54,7 @@ def _run_naive_with_timeout(
    context = multiprocessing.get_context("spawn")
    parent_connection, child_connection = context.Pipe(duplex=False)
    process = context.Process(
-      target=_run_naive_worker,
+      target=_run_thread_worker,
       args=(child_connection, string_a, string_b),
    )
    process.start()
@@ -67,7 +67,7 @@ def _run_naive_with_timeout(
 
       start_message = parent_connection.recv()
       if start_message[0] != "started":
-         raise RuntimeError(f"Unexpected message from naive worker: {start_message!r}")
+         raise RuntimeError(f"Unexpected message from thread worker: {start_message!r}")
 
       deadline = time.perf_counter() + timeout_seconds
       remaining = deadline - time.perf_counter()
@@ -99,18 +99,24 @@ class CaseB1(Study):
       """
       result_dir = Path(__file__).parent / "results"
       result_dir.mkdir(parents=True, exist_ok=True)
-      rows: list[dict[str, object]] = []
-      naive_timed_out = False
+      data: list[dict[str, object]] = []
+      thread_timed_out = False
 
       # setup the thread run
       for length in INPUT_LENGTHS:
-         string_a = "a" * length
-         string_b = "b" * length
+         # all one char
+         # string_a = "a" * length
+         # string_b = "b" * length
+
+         # random chars
+         string_a = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed)
+         string_b = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed)
+         
          row: dict[str, object] = {
             "length": length,
             "string_a": string_a,
             "string_b": string_b,
-            "naive_status": "skipped" if naive_timed_out else "pending",
+            "naive_status": "skipped" if thread_timed_out else "pending",
             "naive_time_ms": "",
             "naive_distance": "",
             "memo_status": "pending",
@@ -121,8 +127,8 @@ class CaseB1(Study):
             row[f"naive_{field}"] = ""
             row[f"memo_{field}"] = ""
 
-         if not naive_timed_out:
-            status, elapsed, summary, distance = _run_naive_with_timeout(
+         if not thread_timed_out:
+            status, elapsed, summary, distance = _run_b1_with_timeout(
                string_a, string_b, IMPRACTICAL_THRESHOLD
             )
 
@@ -134,7 +140,7 @@ class CaseB1(Study):
                for field in COUNTER_FIELDS:
                   row[f"naive_{field}"] = summary[field]
             else:
-               naive_timed_out = True
+               thread_timed_out = True
 
          memo_started = time.perf_counter()
          memo_result = MemoizedEditDistance(string_a, string_b).compute()
@@ -145,7 +151,7 @@ class CaseB1(Study):
 
          for field in COUNTER_FIELDS:
             row[f"memo_{field}"] = memo_result.counters_summary[field]
-         rows.append(row)
+         data.append(row)
 
       fields = [
          "length", "string_a", "string_b",
@@ -160,48 +166,77 @@ class CaseB1(Study):
       with results_path.open("w", newline="", encoding="utf-8") as results_file:
          writer = csv.DictWriter(results_file, fieldnames=fields)
          writer.writeheader()
-         writer.writerows(rows)
+         writer.writerows(data)
 
-      completed_naive = [row for row in rows if row["naive_status"] == "completed"]
-      naive_timeout_rows = [row for row in rows if row["naive_status"] == "timeout"]
-      lengths = [row["length"] for row in rows]
-      self.generate_graph(
-         [
-            (
-               "Naive",
-               [row["length"] for row in completed_naive],
-               [row["naive_total_operations"] for row in completed_naive],
-               "o-",
-            ),
-            ("Memoized", lengths, [row["memo_total_operations"] for row in rows], "o-"),
-         ],
+      completed_naive = [row for row in data if row["naive_status"] == "completed"]
+      naive_timeout_rows = [row for row in data if row["naive_status"] == "timeout"]
+
+      naive_operation_series = Study.build_series(
+         "Naive",
+         completed_naive,
+         "length",
+         "naive_total_operations",
+         "o-",
+      )
+      memoized_operation_series = Study.build_series(
+         "Memoized",
+         data,
+         "length",
+         "memo_total_operations",
+         "o-",
+      )
+      operation_count_series = [naive_operation_series, memoized_operation_series]
+
+      operation_count_graph = self.generate_graph(
+         operation_count_series,
          result_dir / "b1_operation_counts.png",
          title="B1: Operation counts",
          x_label="Input length (each string)",
          y_label="Total operations",
       )
-      self.generate_graph(
-         [
-            (
-               "Naive",
-               [row["length"] for row in completed_naive],
-               [row["naive_time_ms"] for row in completed_naive],
-               "o-",
-            ),
-            (
-               "Naive timed out",
-               [row["length"] for row in naive_timeout_rows],
-               [row["naive_time_ms"] for row in naive_timeout_rows],
-               "x",
-            ),
-            ("Memoized", lengths, [row["memo_time_ms"] for row in rows], "o-"),
-         ],
+      operation_count_graph.show()
+
+      naive_runtime_series = Study.build_series(
+         "Naive",
+         completed_naive,
+         "length",
+         "naive_time_ms",
+         "o-",
+      )
+      naive_timeout_series = Study.build_series(
+         "Naive timed out",
+         naive_timeout_rows,
+         "length",
+         "naive_time_ms",
+         "x",
+      )
+      memoized_runtime_series = Study.build_series(
+         "Memoized",
+         data,
+         "length",
+         "memo_time_ms",
+         "o-",
+      )
+      runtime_series = [
+         naive_runtime_series,
+         naive_timeout_series,
+         memoized_runtime_series,
+      ]
+
+      runtime_graph = self.generate_graph(
+         runtime_series,
          result_dir / "b1_runtime.png",
          title="B1: Runtime",
          x_label="Input length (each string)",
          y_label="Runtime (ms)",
-         reference_line=(IMPRACTICAL_THRESHOLD * 1000, "30-second cutoff"),
+         y_limits=(0, IMPRACTICAL_THRESHOLD * 1000 * 1.05) if naive_timeout_rows else None,
+         reference_line=(
+            (IMPRACTICAL_THRESHOLD * 1000, "30-second cutoff")
+            if naive_timeout_rows
+            else None
+         ),
       )
+      runtime_graph.show()
 
       if naive_timeout_rows:
          timeout_length = naive_timeout_rows[0]["length"]
@@ -209,7 +244,7 @@ class CaseB1(Study):
          print("Later naive cases were skipped; memoized cases continued.")
       else:
          print(f"No naive input exceeded the {IMPRACTICAL_THRESHOLD}-second limit.")
-      print(f"Results and plots saved under {result_dir}.")
+      print(f"Results saved under {result_dir}.")
 
 def main() -> None:
    CaseB1().run()
