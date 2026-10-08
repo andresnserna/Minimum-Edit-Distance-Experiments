@@ -55,6 +55,7 @@ class TabulatedEditDistance(EditDistanceEngine):
                 row.append(self.sentinel)
             self.dp.append(row)
             counter.record_base_case_initialization()
+        counter.record_cell_allocation((n + 1) * (m + 1))
 
     # set these values in the table first 
         for j in range(1, m + 1):

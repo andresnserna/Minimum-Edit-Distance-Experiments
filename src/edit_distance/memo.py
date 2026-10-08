@@ -77,8 +77,9 @@ class MemoizedEditDistance(EditDistanceEngine):
         # self._print_matrix("Memo table:", self.memo)
         return result
     
-    def _distance(self, m, n, counter: Counters) -> int:
+    def _distance(self, m, n, counter: Counters, depth: int = 1) -> int:
         counter.calls += 1
+        counter.record_recursion_depth(depth)
     # MEMO base cases: one string is exhausted
         if m == len(self.string_a): # ("", "abc") → distance = 3 insertions
             return (len(self.string_b) - n) * self.ins_cost
@@ -96,16 +97,16 @@ class MemoizedEditDistance(EditDistanceEngine):
         # this is where the subproblem is solved recursively, and the result is stored in the memoization table
         if self.string_a[m] == self.string_b[n]: 
             counter.record_character_equality_check()
-            distance = self._distance(m + 1, n + 1, counter)
+            distance = self._distance(m + 1, n + 1, counter, depth + 1)
     # MEMO mismatch case
         # ("abc", "xyz") → distance = min(delete_cost, insert_cost, substitute_cost)
         ## delete_cost = self.del_cost + self._distance(m + 1, n, counter)
         ## insert_cost = self.ins_cost + self._distance(m, n + 1, counter)
         ## substitute_cost = self.sub_cost + self._distance(m + 1, n + 1, counter)
         else:  
-            delete_cost = self.del_cost + self._distance(m + 1, n, counter)
-            insert_cost = self.ins_cost + self._distance(m, n + 1, counter)
-            substitute_cost = self.sub_cost + self._distance(m + 1, n + 1, counter)
+            delete_cost = self.del_cost + self._distance(m + 1, n, counter, depth + 1)
+            insert_cost = self.ins_cost + self._distance(m, n + 1, counter, depth + 1)
+            substitute_cost = self.sub_cost + self._distance(m + 1, n + 1, counter, depth + 1)
 
             # CAUTION: tie breaker logic
             chosen_operation = self._best_choice(delete_cost, insert_cost, substitute_cost)
@@ -120,6 +121,7 @@ class MemoizedEditDistance(EditDistanceEngine):
 
         self.memo[m][n] = distance # add the computed distance to the memoization table for caching
         counter.record_table_or_memo_write()
+        counter.record_cell_allocation()
         # TESTING FOR CHK 1... REMOVE FOR FINAL
         # self._print_matrix("Memo table:", self.memo)
         return distance

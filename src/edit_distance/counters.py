@@ -16,6 +16,8 @@ class Counters:
         self.comparisons = 0
         self.calls = 0
         self.total_operations = 0
+        self.cells_allocated = 0
+        self.max_recursion_depth = 0
 
     def _increment(self, *, reads: int = 0, writes: int = 0, comparisons: int = 0) -> None:
         """Internal helper for counting a specific event by its exact resource cost."""
@@ -30,6 +32,16 @@ class Counters:
         self.comparisons = 0
         self.calls = 0
         self.total_operations = 0
+        self.cells_allocated = 0
+        self.max_recursion_depth = 0
+
+    def record_cell_allocation(self, value: int = 1) -> None:
+        """Record allocated DP cells or newly populated memo entries."""
+        self.cells_allocated += value
+
+    def record_recursion_depth(self, depth: int) -> None:
+        """Track the deepest active recursive call level."""
+        self.max_recursion_depth = max(self.max_recursion_depth, depth)
 
     def record_table_or_memo_read(self, value: int = 1) -> None:
         """Count one DP table or memo cell read.
@@ -116,10 +128,14 @@ class Counters:
             "comparisons": self.comparisons,
             "calls": self.calls,
             "total_operations": self.total_operations,
+            "cells_allocated": self.cells_allocated,
+            "max_recursion_depth": self.max_recursion_depth,
         }
 
     def __repr__(self):
         return (f"Counters(reads={self.reads}, writes={self.writes}, "
                 f"comparisons={self.comparisons}, calls={self.calls}, "
                 f"total_operations={self.total_operations}, "
+                f"cells_allocated={self.cells_allocated}, "
+                f"max_recursion_depth={self.max_recursion_depth}, "
                 f"check={'OK' if self.check() else 'MISMATCH'})")
