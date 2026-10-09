@@ -44,13 +44,7 @@ class CaseB1(Study):
 
       # setup the thread run
       for length in INPUT_LENGTHS:
-         # all one char
-         # string_a = "a" * length
-         # string_b = "b" * length
-
-         # random chars
-         # string_a = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed)
-         # string_b = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed + 1)
+         
          if self.USE_RANDOM_WORD:
             string_a = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed)
             string_b = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed + 1)

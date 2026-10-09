@@ -1,34 +1,13 @@
-"""Naive recursive edit-distance implementation.
-
-Purpose:
-    This module defines the naive algorithm class for the project. It is meant to
-    be the baseline implementation that enumerates candidate edit scripts directly
-    through recursion and computes the minimum cost.
-
-Who should call this:
-    The CLI or a test harness should instantiate this class when the user selects
-    the naive implementation.
-
-This file is not responsible for:
-    - memoization or tabulation optimizations
-    - final CLI parsing or user interaction
-    - empirical study measurements
-"""
-
 from __future__ import annotations
 from .base import AlignmentResult, EditDistanceEngine
 from edit_distance.counters import Counters
 from edit_distance.time import TimeTracker
 from typing import List
 
-
 class NaiveEditDistance(EditDistanceEngine):
     """Recursive edit-distance engine using the straightforward recurrence."""
 
     def compute(self) -> AlignmentResult:
-        # PRECONDITION: none, EditDistanceEngine constructor already validated the strings and costs
-        
-        # INSTANTIATE Counters and Timer
         timer = TimeTracker()
         timer.start()
         counter = Counters()

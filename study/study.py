@@ -189,12 +189,12 @@ class Study:
       axes.set_xlabel(x_label)
       axes.set_ylabel(y_label)
       axes.set_title(title)
+      axes.set_xscale(x_scale)
+      axes.set_yscale(y_scale)
       if x_tick_labels is not None:
          if not series or len(series[0][1]) != len(x_tick_labels):
             raise ValueError("x_tick_labels must match the first series' x values.")
          axes.set_xticks(series[0][1], labels=x_tick_labels)
-      axes.set_xscale(x_scale)
-      axes.set_yscale(y_scale)
       if y_limits is not None:
          axes.set_ylim(*y_limits)
       axes.grid(True, alpha=0.3)
@@ -242,5 +242,20 @@ class Study:
          random_word += random.choice(alphabet)
 
       return random_word
-   
+
+   def rand_alphabet(alphabet_size: int, seed: int | None) -> List[str]:
+      """
+      Generate a random alphabet from printable ASCII characters U+0020 through
+      U+007E. The seed can be provided for reproducibility.
+      """
+      assert alphabet_size > 0, "Alphabet size must be positive."
+      assert alphabet_size <= 95, "Alphabet size must not exceed 95."
+
+      if seed is not None:
+         random.seed(seed)
+      else:
+         random.seed()
+
+      return [chr(code_point) for code_point 
+                                 in random.sample(range(0x20, 0x7F), alphabet_size)]
    

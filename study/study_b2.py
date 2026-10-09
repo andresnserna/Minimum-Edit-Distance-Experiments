@@ -24,10 +24,9 @@ from study.study import Study
 from edit_distance.table import TabulatedEditDistance
 
 INPUT_LENGTHS = [10, 20, 40, 80, 160, 320, 640, 1280]
-# INPUT_LENGTHS = [10, 20, 40, 80, 160, 320, 640, 1280, 2560, 5120, 10240]
+# INPUT_LENGTHS = [160, 320, 640, 1280, 2560, 5120, 10240, 20480]
 IMPRACTICAL_THRESHOLD = 30
 COUNTER_FIELDS = ("reads", "writes", "comparisons", "calls", "total_operations")
-# TABLE_HEADERS = ("n", "total_ops", "ratio", "run_time_ms", "ratio")
 
 class CaseB2(Study):
     USE_RANDOM_WORD = True

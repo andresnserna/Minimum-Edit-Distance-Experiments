@@ -80,7 +80,7 @@ INPUT_LENGTHS = range(1, 30)
 IMPRACTICAL_THRESHOLD = 30
 
 class CaseB4(Study):
-   USE_RANDOM_WORD = False
+   USE_RANDOM_WORD = True
 
    def run(self) -> None:
       """
@@ -99,14 +99,10 @@ class CaseB4(Study):
          timed_out = {name: False for name, _ in ALGORITHMS}
 
          for pair_index, length in enumerate(INPUT_LENGTHS, start=1):
-            # random chars
-            # string_a = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed)
-            # string_b = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed + 1)
             if self.USE_RANDOM_WORD:
                string_a = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed)
                string_b = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed + 1)
             else:
-               # all one char
                string_a = "a" * length
                string_b = "b" * length
 

@@ -1,19 +1,3 @@
-"""Memoized edit-distance implementation.
-
-Purpose:
-    This module defines the top-down dynamic-programming algorithm. It caches the
-    value for each subproblem so the same states are not recomputed repeatedly.
-
-Who should call this:
-    The CLI or a test harness should instantiate this class when the user selects
-    the memoized implementation.
-
-This file is not responsible for:
-    - bottom-up table construction
-    - low-level command-line argument validation
-    - research or plotting output
-"""
-
 from __future__ import annotations
 from .base import AlignmentResult, EditDistanceEngine
 from edit_distance.counters import Counters
@@ -58,7 +42,7 @@ class MemoizedEditDistance(EditDistanceEngine):
             counter.record_base_case_initialization()
 
     # MEMO: this is the recursive solver, that will fill in the memoization table as it goes to subproblems
-        distance = self._distance(0, 0, counter)
+        distance = self.compute_helper(0, 0, counter)
         edit_script = self._reconstruct_edit_script()
         alignment_lines = self._build_alignment(edit_script)
 
@@ -77,7 +61,7 @@ class MemoizedEditDistance(EditDistanceEngine):
         # self._print_matrix("Memo table:", self.memo)
         return result
     
-    def _distance(self, m, n, counter: Counters, depth: int = 1) -> int:
+    def compute_helper(self, m, n, counter: Counters, depth: int = 1) -> int:
         counter.calls += 1
         counter.record_recursion_depth(depth)
     # MEMO base cases: one string is exhausted
@@ -97,16 +81,16 @@ class MemoizedEditDistance(EditDistanceEngine):
         # this is where the subproblem is solved recursively, and the result is stored in the memoization table
         if self.string_a[m] == self.string_b[n]: 
             counter.record_character_equality_check()
-            distance = self._distance(m + 1, n + 1, counter, depth + 1)
+            distance = self.compute_helper(m + 1, n + 1, counter, depth + 1)
     # MEMO mismatch case
         # ("abc", "xyz") → distance = min(delete_cost, insert_cost, substitute_cost)
         ## delete_cost = self.del_cost + self._distance(m + 1, n, counter)
         ## insert_cost = self.ins_cost + self._distance(m, n + 1, counter)
         ## substitute_cost = self.sub_cost + self._distance(m + 1, n + 1, counter)
         else:  
-            delete_cost = self.del_cost + self._distance(m + 1, n, counter, depth + 1)
-            insert_cost = self.ins_cost + self._distance(m, n + 1, counter, depth + 1)
-            substitute_cost = self.sub_cost + self._distance(m + 1, n + 1, counter, depth + 1)
+            delete_cost = self.del_cost + self.compute_helper(m + 1, n, counter, depth + 1)
+            insert_cost = self.ins_cost + self.compute_helper(m, n + 1, counter, depth + 1)
+            substitute_cost = self.sub_cost + self.compute_helper(m + 1, n + 1, counter, depth + 1)
 
             # CAUTION: tie breaker logic
             chosen_operation = self._best_choice(delete_cost, insert_cost, substitute_cost)
