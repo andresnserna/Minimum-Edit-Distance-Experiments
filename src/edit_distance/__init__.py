@@ -21,4 +21,7 @@ __all__ = [
     "Counters",
     "EditDistanceEngine",
     "EditDistanceCLI",
+    "SmithWaterEditDistance",
 ]
+
+from .smith_water import SmithWaterEditDistance

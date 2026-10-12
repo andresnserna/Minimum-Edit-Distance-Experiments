@@ -3,6 +3,7 @@ from edit_distance.models import RuntimeConfig
 from edit_distance.naive import NaiveEditDistance
 from edit_distance.memo import MemoizedEditDistance
 from edit_distance.table import TabulatedEditDistance
+from edit_distance.smith_water import SmithWaterEditDistance
 import contextlib
 import io
 
@@ -40,6 +41,27 @@ def test_resolve_impl_returns_expected_class() -> None:
     assert cli._resolve_impl("naive") is NaiveEditDistance
     assert cli._resolve_impl("memo") is MemoizedEditDistance
     assert cli._resolve_impl("table") is TabulatedEditDistance
+    assert cli._resolve_impl("smith-water") is SmithWaterEditDistance
+
+
+def test_smith_water_cli_runs_local_alignment(tmp_path) -> None:
+    input_file = tmp_path / "pairs.tsv"
+    input_file.write_text("XXABCYY\tZZABCWW\n", encoding="utf-8")
+    output = io.StringIO()
+
+    with contextlib.redirect_stdout(output):
+        EditDistanceCLI().run([
+            "--input", str(input_file),
+            "--impl", "smith-water",
+            "--verbose",
+        ])
+
+    assert output.getvalue().splitlines() == [
+        "XXABCYY\tZZABCWW\t3.0",
+        "  A B C",
+        "  A B C",
+        "  . . .",
+    ]
 
 
 def test_verbose_flag_prints_alignment_for_each_implementation(tmp_path) -> None:

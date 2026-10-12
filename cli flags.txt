@@ -29,3 +29,23 @@ default: off
 --counters
 Also emit a counter summary per pair, to counters.txt
 default: off
+
+--caseb1
+Also emit a counter summary per pair, to counters.txt
+default: off
+
+--caseb2
+Also emit a counter summary per pair, to counters.txt
+default: off
+
+--caseb3
+Also emit a counter summary per pair, to counters.txt
+default: off
+
+--caseb4
+Also emit a counter summary per pair, to counters.txt
+default: off
+
+--caseb5
+Also emit a counter summary per pair, to counters.txt
+default: off

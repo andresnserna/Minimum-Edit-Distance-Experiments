@@ -109,6 +109,12 @@ class Counters:
             raise ValueError("k must be at least 1 when recording a minimum-of-k event.")
         self._increment(comparisons=(k - 1) * value)
 
+    def record_maximum_of_k(self, k: int, value: int = 1) -> None:
+        """Count the comparison cost of taking the maximum of k candidate values."""
+        if k < 1:
+            raise ValueError("k must be at least 1 when recording a maximum-of-k event.")
+        self._increment(comparisons=(k - 1) * value)
+
     def record_base_case_initialization(self, value: int = 1) -> None:
         """Count a base-case cell initialization.
 

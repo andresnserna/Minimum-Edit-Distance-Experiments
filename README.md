@@ -38,6 +38,29 @@ python -m edit_distance --input data/sample_verification.tsv --sub 1 --ins 1 --d
 
 The project also supports a test-only execution path for small verification cases, which will be added once the engine logic is implemented.
 
+## Smith–Waterman local alignment
+
+The `SmithWaterEditDistance` engine implements the local-similarity recurrence
+from Smith and Waterman (1981), including a zero floor, global matrix maximum,
+and length-dependent gap costs:
+
+```python
+from edit_distance import SmithWaterEditDistance
+
+result = SmithWaterEditDistance("XXABCYY", "ZZABCWW").compute()
+print(result.distance)  # best local alignment score
+print(result.alignment_lines)
+```
+
+Its defaults use a match score of `1`, a mismatch score of `-1/3`, and a gap
+weight `W_k = 1 + k/3`. Pass `match_score`, `mismatch_score`, and a callable
+`gap_cost(k)` to use other scoring parameters; a `similarity_score(a, b)`
+callable can replace the match/mismatch score rule. The 0-based, half-open
+`alignment_range_a` and `alignment_range_b` fields identify the selected
+segments in the original inputs. The algorithm is also available through the
+CLI as `--impl smith-water`. Its `distance` field contains the local-alignment
+score (which may be fractional), not a global edit distance.
+
 ## Project layout
 
 ```text

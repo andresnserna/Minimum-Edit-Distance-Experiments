@@ -30,10 +30,13 @@ class AlignmentResult:
 
     string_a: str
     string_b: str
-    distance: int
+    distance: int | float
     edit_script: List[str] = field(default_factory=list)
     alignment_lines: List[str] = field(default_factory=list)
     counters_summary: Optional[dict] = None
+    time_summary: Optional[dict] = None
+    alignment_range_a: Optional[Tuple[int, int]] = None
+    alignment_range_b: Optional[Tuple[int, int]] = None
     TAB = "    "
 
 
@@ -125,7 +128,7 @@ class EditDistanceResultFormatter:
     """Helper responsible only for formatting the final output rows."""
 
     @staticmethod
-    def format_output(string_a: str, string_b: str, distance: int) -> str:
+    def format_output(string_a: str, string_b: str, distance: int | float) -> str:
         return f"{string_a}\t{string_b}\t{distance}"
 
     @staticmethod

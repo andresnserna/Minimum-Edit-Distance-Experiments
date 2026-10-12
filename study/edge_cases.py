@@ -12,8 +12,8 @@
 
 # Edge Case Analysis
 
-# Generate random string pairs of fixed length n over alphabets of at least three different sizes —
-# for example 2, 4, and 26 — holding n constant. Report total_operations for A3 on each,
+# Generate random string pairs of varied lengths over alphabets of at least three different sizes.
+# Report the A3 edit-operation counts at each length,
 # and answer the following question: “Does the runtime of the tabular edit distance algorithm have
 # an asymptotically different best and worst case scenario?”
 
@@ -28,7 +28,7 @@ from edit_distance.table import TabulatedEditDistance
 
 ALPHABET_SIZES = [10, 26, 95]
 DNA_ALPHABET = ["A", "C", "G", "T"]
-LENGTH_N  = 10
+LENGTHS = [10, 50, 100, 200, 300, 400, 500, 1000, 2000]
 IMPRACTICAL_THRESHOLD = 30
 OPERATION_FIELDS = ("substitutions", "insertions", "deletions", "matches")
 OPERATION_CODES = ("S", "I", "D", ".")
@@ -41,93 +41,57 @@ class CaseB5(Study):
 
    def run(self) -> None:
       """
-      Generate random string pairs of fixed length n over alphabets of at least three different sizes (for example 2, 4, and 26) holding n constant. Reports total_operations for A3 on each
+      Measure edit-operation counts across input lengths and alphabet sizes.
       """
       result_dir = self.get_results_directory(self.USE_RANDOM_WORD)
       data: list[dict[str, object]] = []
-      thread_timed_out = False
+      timed_out_groups: set[tuple[str, int]] = set()
 
-      # EDGE CASE ANALYSIS 1 - random strings
-      for alphabet_size in ALPHABET_SIZES:
-         alphabet = Study.rand_alphabet(alphabet_size, seed=Study.default_seed)
-         string_a = Study.rand_word(alphabet, LENGTH_N, seed=Study.default_seed + 1)
-         string_b = Study.rand_word(alphabet, LENGTH_N, seed=Study.default_seed + 2)
+      for length in LENGTHS:
+         # Random strings with controlled alphabet sizes.
+         for alphabet_size in ALPHABET_SIZES:
+            group = ("random_alphabet", alphabet_size)
+            alphabet = Study.rand_alphabet(alphabet_size, seed=Study.default_seed)
+            seed_offset = alphabet_size * 2
+            string_a = Study.rand_word(
+               alphabet, length, seed=Study.default_seed + seed_offset + 1
+            )
+            string_b = Study.rand_word(
+               alphabet, length, seed=Study.default_seed + seed_offset + 2
+            )
+            data.append(
+               self.__run_case(
+                  "random_alphabet",
+                  alphabet_size,
+                  length,
+                  string_a,
+                  string_b,
+                  group in timed_out_groups,
+               )
+            )
+            if data[-1]["status"] == "timeout":
+               timed_out_groups.add(group)
 
-         data_row: dict[str, object] = {
-            "input_type": "random_alphabet",
-            "alphabet_size": alphabet_size,
-            "length": LENGTH_N,
-            "string_a": string_a,
-            "string_b": string_b,
-            "status": "skipped" if thread_timed_out else "pending",
-            "run_time_ms": "",
-            "distance": "",
-            **{f"table_{field}": "" for field in OPERATION_FIELDS},
-         }
-
-         if not thread_timed_out:
-            status, elapsed, summary, distance, edit_script = self.run_with_timeout(
-               TabulatedEditDistance,
+         # DNA remains a separate input category, measured at every length.
+         dna_group = ("dna", len(DNA_ALPHABET))
+         string_a = Study.rand_word(
+            DNA_ALPHABET, length, seed=Study.default_seed + 2 * length + 1
+         )
+         string_b = Study.rand_word(
+            DNA_ALPHABET, length, seed=Study.default_seed + 2 * length + 2
+         )
+         data.append(
+            self.__run_case(
+               "dna",
+               len(DNA_ALPHABET),
+               length,
                string_a,
                string_b,
-               IMPRACTICAL_THRESHOLD,
+               dna_group in timed_out_groups,
             )
-            data_row["status"] = status
-            data_row["run_time_ms"] = round(elapsed * 1000, 3)
-
-            if summary is not None:
-               if edit_script is None:
-                  raise RuntimeError("Completed B5 run did not return an edit script.")
-               data_row["distance"] = distance
-               for field in METRICS:
-                  data_row[f"table_{field}"] = summary[field]
-               for field, operation in zip(OPERATION_FIELDS, OPERATION_CODES):
-                  data_row[f"table_{field}"] = edit_script.count(operation)
-            else:
-               thread_timed_out = True
-
-         data.append(data_row)
-
-
-      # EDGE CASE ANALYSIS 2 - DNA sequences
-      for pair_index in range(3):  # Generate three random DNA sequence pairs
-         string_a = Study.rand_word(DNA_ALPHABET, LENGTH_N, seed=Study.default_seed + 3 + 2 * pair_index)
-         string_b = Study.rand_word(DNA_ALPHABET, LENGTH_N, seed=Study.default_seed + 4 + 2 * pair_index)
-
-         data_row: dict[str, object] = {
-            "input_type": "dna",
-            "alphabet_size": len(DNA_ALPHABET),
-            "length": LENGTH_N,
-            "string_a": string_a,
-            "string_b": string_b,
-            "status": "skipped" if thread_timed_out else "pending",
-            "run_time_ms": "",
-            "distance": "",
-            **{f"table_{field}": "" for field in OPERATION_FIELDS},
-         }
-
-         if not thread_timed_out:
-            status, elapsed, summary, distance, edit_script = self.run_with_timeout(
-               TabulatedEditDistance,
-               string_a,
-               string_b,
-               IMPRACTICAL_THRESHOLD,
-            )
-            data_row["status"] = status
-            data_row["run_time_ms"] = round(elapsed * 1000, 3)
-
-            if summary is not None:
-               if edit_script is None:
-                  raise RuntimeError("Completed B5 run did not return an edit script.")
-               data_row["distance"] = distance
-               for field in METRICS:
-                  data_row[f"table_{field}"] = summary[field]
-               for field, operation in zip(OPERATION_FIELDS, OPERATION_CODES):
-                  data_row[f"table_{field}"] = edit_script.count(operation)
-            else:
-               thread_timed_out = True
-
-         data.append(data_row)
+         )
+         if data[-1]["status"] == "timeout":
+            timed_out_groups.add(dna_group)
 
       fields = [
          "input_type",
@@ -148,86 +112,141 @@ class CaseB5(Study):
          writer.writeheader()
          writer.writerows(data)
 
-      graphing_data = {
-         (str(row["input_type"]), int(row["alphabet_size"])): row
-         for row in data
-         if row["status"] == "completed"
-      }
       self.__result_dir = result_dir
-      self.__graphing_data = graphing_data
+      for alphabet_size in ALPHABET_SIZES:
+         self.__save_operation_graph(
+            data,
+            "random_alphabet",
+            alphabet_size,
+            f"b5_alphabet_{alphabet_size}_operations.png",
+         )
+      self.__save_operation_graph(
+         data, "dna", len(DNA_ALPHABET), "b5_dna_operations.png"
+      )
 
-      # Graph of alphabet 1: x = operation, y = count of that operation.
-      self.__save_operation_graph("random_alphabet", ALPHABET_SIZES[0])
-
-      # Graph of alphabet 2: x = operation, y = count of that operation.
-      self.__save_operation_graph("random_alphabet", ALPHABET_SIZES[1])
-
-      # Graph of alphabet 3: x = operation, y = count of that operation.
-      self.__save_operation_graph("random_alphabet", ALPHABET_SIZES[2])
-
-      # Graph of DNA sequence: x = operation, y = count of that operation.
-      self.__save_operation_graph("dna", len(DNA_ALPHABET))
-
-      # Graph of runtime: x = alphabet size, y = runtime (ms).
-      completed_random_rows = [
+      random_rows = [
          row
          for row in data
          if row["input_type"] == "random_alphabet" and row["status"] == "completed"
       ]
-      if not completed_random_rows:
-         raise RuntimeError("Cannot plot B5 runtime: no random-alphabet run completed.")
-      runtime_series = Study.build_series(
-         "Tabulated",
-         completed_random_rows,
-         "alphabet_size",
-         "run_time_ms",
-         "o-",
-      )
-      runtime_figure = self.generate_graph(
-         [runtime_series],
-         result_dir / "b5_runtime_by_alphabet_size.png",
-         title="B5: Runtime by alphabet size",
-         x_label="Alphabet size",
-         y_label="Runtime (ms)",
-      )
-      runtime_figure.show()
-
-   def __save_operation_graph(self, input_type: str, alphabet_size: int) -> None:
-      row = self.__graphing_data.get((input_type, alphabet_size))
-      if row is None:
-         raise RuntimeError(
-            f"Cannot plot B5 operation counts: no completed {input_type!r} "
-            f"result for alphabet size {alphabet_size}."
+      if random_rows:
+         runtime_series = [
+            Study.build_series(
+               f"Alphabet size {alphabet_size}",
+               [
+                  row
+                  for row in random_rows
+                  if row["alphabet_size"] == alphabet_size
+               ],
+               "length",
+               "run_time_ms",
+               style,
+            )
+            for alphabet_size, style in zip(ALPHABET_SIZES, ("o-", "s-", "^-"))
+         ]
+         runtime_figure = self.generate_graph(
+            runtime_series,
+            result_dir / "b5_runtime_by_alphabet_size.png",
+            title="B5: Runtime by input length",
+            x_label="Input length",
+            y_label="Runtime (ms)",
          )
-      operation_rows = [
-         {"operation_index": index, "operation_count": row[f"table_{field}"]}
-         for index, field in enumerate(OPERATION_FIELDS)
+         runtime_figure.show()
+
+      for group in sorted(timed_out_groups):
+         print(
+            f"B5 {group[0]} alphabet size {group[1]} exceeded the "
+            f"{IMPRACTICAL_THRESHOLD}-second limit; later lengths were skipped."
+         )
+      print(f"Results saved under {result_dir}.")
+
+   def __run_case(
+      self,
+      input_type: str,
+      alphabet_size: int,
+      length: int,
+      string_a: str,
+      string_b: str,
+      has_timed_out: bool,
+   ) -> dict[str, object]:
+      data_row: dict[str, object] = {
+         "input_type": input_type,
+         "alphabet_size": alphabet_size,
+         "length": length,
+         "string_a": string_a,
+         "string_b": string_b,
+         "status": "skipped" if has_timed_out else "pending",
+         "run_time_ms": "",
+         "distance": "",
+         **{f"table_{field}": "" for field in OPERATION_FIELDS},
+         **{f"table_{field}": "" for field in METRICS},
+      }
+
+      if not has_timed_out:
+         status, elapsed, summary, distance, edit_script = self.run_with_timeout(
+            TabulatedEditDistance,
+            string_a,
+            string_b,
+            IMPRACTICAL_THRESHOLD,
+         )
+         data_row["status"] = status
+         data_row["run_time_ms"] = round(elapsed * 1000, 3)
+
+         if summary is not None:
+            if edit_script is None:
+               raise RuntimeError("Completed B5 run did not return an edit script.")
+            data_row["distance"] = distance
+            for field in METRICS:
+               data_row[f"table_{field}"] = summary[field]
+            for field, operation in zip(OPERATION_FIELDS, OPERATION_CODES):
+               data_row[f"table_{field}"] = edit_script.count(operation)
+      return data_row
+
+   def __save_operation_graph(
+      self,
+      data: list[dict[str, object]],
+      input_type: str,
+      alphabet_size: int,
+      graph_name: str,
+   ) -> None:
+      completed_rows = [
+         row
+         for row in data
+         if row["input_type"] == input_type
+         and row["alphabet_size"] == alphabet_size
+         and row["status"] == "completed"
       ]
-      series = Study.build_series(
-         "Tabulated",
-         operation_rows,
-         "operation_index",
-         "operation_count",
-         "o-",
-      )
-      graph_name = (
-         f"b5_alphabet_{alphabet_size}_operations.png"
-         if input_type == "random_alphabet"
-         else "b5_dna_operations.png"
-      )
+      if not completed_rows:
+         print(
+            f"Skipping {graph_name}: no completed {input_type!r} "
+            f"runs for alphabet size {alphabet_size}."
+         )
+         return
+
+      styles = ("o-", "s-", "^-", "D-")
+      series = [
+         Study.build_series(
+            label,
+            completed_rows,
+            "length",
+            f"table_{field}",
+            style,
+         )
+         for label, field, style in zip(
+            OPERATION_LABELS, OPERATION_FIELDS, styles
+         )
+      ]
       graph_title = (
          f"B5: Edit operations (alphabet size {alphabet_size})"
          if input_type == "random_alphabet"
          else f"B5: Edit operations ({input_type.upper()}, alphabet size {alphabet_size})"
       )
       figure = self.generate_graph(
-         [series],
+         series,
          self.__result_dir / graph_name,
          title=graph_title,
-         x_label="Edit operation",
+         x_label="Input length",
          y_label="Operation count",
-         chart_type="bar",
-         x_tick_labels=OPERATION_LABELS,
       )
       figure.show()
 

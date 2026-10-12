@@ -27,6 +27,7 @@ from .io import InputParser
 from .memo import MemoizedEditDistance
 from .models import RuntimeConfig
 from .naive import NaiveEditDistance
+from .smith_water import SmithWaterEditDistance
 from .table import TabulatedEditDistance
 
 
@@ -67,7 +68,7 @@ class EditDistanceCLI:
         )
         parser.add_argument(
             "--impl",
-            choices=["naive", "memo", "table"],
+            choices=["naive", "memo", "table", "smith-water"],
             default="table",
             help="Which edit-distance implementation to run.",
         )
@@ -96,6 +97,7 @@ class EditDistanceCLI:
             "naive": NaiveEditDistance,
             "memo": MemoizedEditDistance,
             "table": TabulatedEditDistance,
+            "smith-water": SmithWaterEditDistance,
         }
         return mapping[impl_name]
 
@@ -105,13 +107,16 @@ class EditDistanceCLI:
         pairs = InputParser.load_pairs(config.input_path)
 
         for string_a, string_b, _ in pairs:
-            algorithm = impl_cls(
-                string_a,
-                string_b,
-                sub_cost=config.sub_cost,
-                ins_cost=config.ins_cost,
-                del_cost=config.del_cost,
-            )
+            if config.impl == "smith-water":
+                algorithm = impl_cls(string_a, string_b)
+            else:
+                algorithm = impl_cls(
+                    string_a,
+                    string_b,
+                    sub_cost=config.sub_cost,
+                    ins_cost=config.ins_cost,
+                    del_cost=config.del_cost,
+                )
             result = algorithm.compute()
 
             print(EditDistanceResultFormatter.format_output(string_a, string_b, result.distance))

@@ -28,3 +28,6 @@ dist/
 
 # study files
 study/results/
+
+# exclude
+Smith-Waterman-paper 2.pdf
