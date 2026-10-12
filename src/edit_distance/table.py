@@ -18,7 +18,6 @@ class TabulatedEditDistance(EditDistanceEngine):
         counter = Counters()
         timer = TimeTracker()
         timer.start()
-        counter.calls += 1 # "compute()" is the find() method here, so by entering it you call the func at least once, but for each recursive call this var will be incremented
 
         # VARIABLES FOR RETURN
         string_a = self.string_a
@@ -36,8 +35,8 @@ class TabulatedEditDistance(EditDistanceEngine):
             row = []
             for j in range(m + 1):
                 row.append(self.sentinel)
+                counter.record_base_case_initialization()
             self.dp.append(row)
-            counter.record_base_case_initialization()
         counter.record_cell_allocation((n + 1) * (m + 1))
 
     # set these values in the table first 
@@ -88,7 +87,7 @@ class TabulatedEditDistance(EditDistanceEngine):
                 # self._print_matrix("DP table:", self.dp)
 
         distance = self.dp[n][m] # after the big 'ol for-loop, the value at this cell in the matrix will have the minimum edit distance from a to b
-        counter.record_table_or_memo_write()
+        counter.record_table_or_memo_read()
         edit_script = self._reconstruct_edit_script()
         alignment_lines = self._build_alignment(edit_script)
 
