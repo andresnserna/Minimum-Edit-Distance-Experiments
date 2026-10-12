@@ -4,7 +4,12 @@ cli flags
 
 
 --input FILE
-Path to a TSV input file: required
+Path to a TSV input file. Required for algorithm runs; optional for study runs.
+Study input files must end in _study.tsv.
+
+--results_dir DIR
+Top-level directory for study results. Each study retains its case/input/scheme subdirectories.
+Defaults to study/results.
 
 --sub N
 Substitution cost
@@ -31,21 +36,24 @@ Also emit a counter summary per pair, to counters.txt
 default: off
 
 --caseb1
-Also emit a counter summary per pair, to counters.txt
 default: off
 
 --caseb2
-Also emit a counter summary per pair, to counters.txt
 default: off
 
 --caseb3
-Also emit a counter summary per pair, to counters.txt
 default: off
 
---caseb4
-Also emit a counter summary per pair, to counters.txt
+--case_edge
 default: off
 
---caseb5
-Also emit a counter summary per pair, to counters.txt
+--case_cost_schemes
+Run the B4 cost-weight study
 default: off
+
+Select at most one study flag. Example:
+python -m edit_distance --caseb1 --input data/example_study.tsv
+python -m edit_distance --case_cost_schemes --input data/example_study.tsv --results_dir=results
+
+Without --input, study cases use their built-in generated inputs.
+The edge-case study uses controlled-alphabet and DNA inputs when no file is given.

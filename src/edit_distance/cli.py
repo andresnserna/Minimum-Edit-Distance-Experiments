@@ -20,6 +20,7 @@ This file is not responsible for:
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 from typing import Sequence
 
 from .base import EditDistanceResultFormatter
@@ -44,8 +45,12 @@ class EditDistanceCLI:
         parser.add_argument(
             "--input",
             type=str,
-            required=True,
-            help="Path to the TSV file containing input string pairs.",
+            help="Path to a TSV input file. Study cases accept *_study.tsv files.",
+        )
+        parser.add_argument(
+            "--results_dir",
+            type=str,
+            help="Top-level directory for study outputs. Defaults to study/results.",
         )
         parser.add_argument(
             "--sub",
@@ -82,6 +87,42 @@ class EditDistanceCLI:
             action="store_true",
             help="Emit counter summaries alongside the final distance results.",
         )
+        study_group = parser.add_mutually_exclusive_group()
+        study_group.add_argument(
+            "--caseb1",
+            dest="study_case",
+            action="store_const",
+            const="b1",
+            help="Run empirical study B1.",
+        )
+        study_group.add_argument(
+            "--caseb2",
+            dest="study_case",
+            action="store_const",
+            const="b2",
+            help="Run empirical study B2.",
+        )
+        study_group.add_argument(
+            "--caseb3",
+            dest="study_case",
+            action="store_const",
+            const="b3",
+            help="Run empirical study B3.",
+        )
+        study_group.add_argument(
+            "--case_cost_schemes",
+            dest="study_case",
+            action="store_const",
+            const="cost_weights",
+            help="Run the B4 cost-weight study.",
+        )
+        study_group.add_argument(
+            "--case_edge",
+            dest="study_case",
+            action="store_const",
+            const="edge_cases",
+            help="Run the B5 edge-case study.",
+        )
 
         self.parser = parser
         return parser
@@ -103,6 +144,29 @@ class EditDistanceCLI:
 
     def _execute(self, config: RuntimeConfig) -> int:
         """Execute the selected implementation against the provided input."""
+        if config.study_case is not None:
+            if config.input_path is not None:
+                input_path = Path(config.input_path)
+                if not input_path.name.endswith("_study.tsv"):
+                    self.parser.error(
+                        "Study input files must have a name ending in '_study.tsv'."
+                    )
+                if not input_path.is_file():
+                    self.parser.error(f"Study input file not found: {input_path}")
+            results_dir = (
+                Path(config.results_dir).expanduser()
+                if config.results_dir is not None
+                else None
+            )
+            self._run_study(config.study_case, config.input_path, results_dir)
+            return 0
+
+        if config.results_dir is not None:
+            self.parser.error("--results_dir can only be used with a study flag.")
+
+        if config.input_path is None:
+            self.parser.error("--input is required when no study case is selected.")
+
         impl_cls = self._resolve_impl(config.impl)
         pairs = InputParser.load_pairs(config.input_path)
 
@@ -134,11 +198,43 @@ class EditDistanceCLI:
 
         return 0 if pairs else 1
 
+    @staticmethod
+    def _run_study(
+        study_case: str,
+        input_path: str | None,
+        results_dir: Path | None = None,
+    ) -> None:
+        """Import and run the selected empirical study."""
+        if study_case == "b1":
+            from study.study_b1 import CaseB1
+
+            study = CaseB1()
+        elif study_case == "b2":
+            from study.study_b2 import CaseB2
+
+            study = CaseB2()
+        elif study_case == "b3":
+            from study.study_b3 import CaseB3
+
+            study = CaseB3()
+        elif study_case == "cost_weights":
+            from study.cost_weights import CaseB4
+
+            study = CaseB4()
+        elif study_case == "edge_cases":
+            from study.edge_cases import CaseB5
+
+            study = CaseB5()
+        else:
+            raise ValueError(f"Unknown study case: {study_case!r}")
+        study.run(input_path=input_path, results_dir=results_dir)
+
     def parse_args(self, argv: Sequence[str] | None = None):
         """Parse the argument list and return the runtime configuration."""
         args = self.build_parser().parse_args(argv)
 
-        self._validate_costs(args.sub, args.ins, args.delete_cost)
+        if args.study_case is None:
+            self._validate_costs(args.sub, args.ins, args.delete_cost)
 
         return RuntimeConfig(
             input_path=args.input,
@@ -148,6 +244,8 @@ class EditDistanceCLI:
             impl=args.impl,
             verbose=args.verbose,
             counters=args.counters,
+            study_case=args.study_case,
+            results_dir=args.results_dir,
         )
 
     def run(self, argv: Sequence[str] | None = None) -> int:

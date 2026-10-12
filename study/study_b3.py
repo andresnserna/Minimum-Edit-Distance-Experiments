@@ -25,6 +25,8 @@
 
 from __future__ import annotations
 import csv
+from pathlib import Path
+from edit_distance.io import InputParser
 from study.study import Study
 from edit_distance.memo import MemoizedEditDistance
 from edit_distance.table import TabulatedEditDistance
@@ -36,25 +38,61 @@ METRICS = ("total_operations", "cells_allocated", "max_recursion_depth")
 class CaseB3(Study):
     USE_RANDOM_WORD = False
 
-    def run(self) -> None:
+    def run(
+        self,
+        input_path: str | None = None,
+        results_dir: Path | None = None,
+    ) -> None:
         """
         Compare memo and table on identical inputs across all of: total_operations, Run time (ms), table cells allocated, maximum recursion depth reached for memo.\n
         For memo, cells_allocated counts computed memo entries; for table, it counts
         the full allocated DP table. max_recursion_depth is only applicable to memo.
         """
-        result_dir = self.get_results_directory(self.USE_RANDOM_WORD)
+        result_dir = self.get_results_directory(
+            self.USE_RANDOM_WORD, results_root=results_dir
+        )
         data: list[dict[str, object]] = []
         memo_timed_out = False
         table_timed_out = False
 
-        for length in INPUT_LENGTHS:
-            if self.USE_RANDOM_WORD:
-                string_a = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed)
-                string_b = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed + 1)
-            else:
-                # all one char
-                string_a = "a" * length
-                string_b = "b" * length
+        input_pairs = (
+            InputParser.load_study_pairs(input_path)
+            if input_path is not None
+            else None
+        )
+        cases = (
+            [
+                (max(len(string_a), len(string_b)), string_a, string_b)
+                for string_a, string_b in input_pairs
+            ]
+            if input_pairs is not None
+            else [
+                (
+                    length,
+                    (
+                        Study.rand_word(
+                            Study.eng_alphabet_low,
+                            length,
+                            seed=Study.default_seed,
+                        )
+                        if self.USE_RANDOM_WORD
+                        else "a" * length
+                    ),
+                    (
+                        Study.rand_word(
+                            Study.eng_alphabet_low,
+                            length,
+                            seed=Study.default_seed + 1,
+                        )
+                        if self.USE_RANDOM_WORD
+                        else "b" * length
+                    ),
+                )
+                for length in INPUT_LENGTHS
+            ]
+        )
+
+        for length, string_a, string_b in cases:
 
             data_row: dict[str, object] = {
                 "length": length,
@@ -160,7 +198,7 @@ class CaseB3(Study):
                 save=False,
             )
             axes = figure.axes[0]
-            axes.set_xticks(list(INPUT_LENGTHS))
+            axes.set_xticks(sorted({int(row["length"]) for row in data}))
             axes.tick_params(axis="x", labelrotation=45)
             figure.set_size_inches(14, 6)
             figure.tight_layout()

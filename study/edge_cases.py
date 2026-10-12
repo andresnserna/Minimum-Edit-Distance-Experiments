@@ -23,6 +23,8 @@
 
 from __future__ import annotations
 import csv
+from pathlib import Path
+from edit_distance.io import InputParser
 from study.study import Study
 from edit_distance.table import TabulatedEditDistance
 
@@ -39,31 +41,29 @@ METRICS = ("total_operations",)
 class CaseB5(Study):
    USE_RANDOM_WORD = True
 
-   def run(self) -> None:
+   def run(
+      self,
+      input_path: str | None = None,
+      results_dir: Path | None = None,
+   ) -> None:
       """
       Measure edit-operation counts across input lengths and alphabet sizes.
       """
-      result_dir = self.get_results_directory(self.USE_RANDOM_WORD)
+      result_dir = self.get_results_directory(
+         self.USE_RANDOM_WORD, results_root=results_dir
+      )
       data: list[dict[str, object]] = []
       timed_out_groups: set[tuple[str, int]] = set()
 
-      for length in LENGTHS:
-         # Random strings with controlled alphabet sizes.
-         for alphabet_size in ALPHABET_SIZES:
-            group = ("random_alphabet", alphabet_size)
-            alphabet = Study.rand_alphabet(alphabet_size, seed=Study.default_seed)
-            seed_offset = alphabet_size * 2
-            string_a = Study.rand_word(
-               alphabet, length, seed=Study.default_seed + seed_offset + 1
-            )
-            string_b = Study.rand_word(
-               alphabet, length, seed=Study.default_seed + seed_offset + 2
-            )
+      if input_path is not None:
+         for string_a, string_b in InputParser.load_study_pairs(input_path):
+            alphabet_size = len(set(string_a + string_b))
+            group = ("study_input", alphabet_size)
             data.append(
                self.__run_case(
-                  "random_alphabet",
+                  "study_input",
                   alphabet_size,
-                  length,
+                  max(len(string_a), len(string_b)),
                   string_a,
                   string_b,
                   group in timed_out_groups,
@@ -71,27 +71,52 @@ class CaseB5(Study):
             )
             if data[-1]["status"] == "timeout":
                timed_out_groups.add(group)
+      else:
+         for length in LENGTHS:
+            for alphabet_size in ALPHABET_SIZES:
+               group = ("random_alphabet", alphabet_size)
+               alphabet = Study.rand_alphabet(
+                  alphabet_size, seed=Study.default_seed
+               )
+               seed_offset = alphabet_size * 2
+               string_a = Study.rand_word(
+                  alphabet, length, seed=Study.default_seed + seed_offset + 1
+               )
+               string_b = Study.rand_word(
+                  alphabet, length, seed=Study.default_seed + seed_offset + 2
+               )
+               data.append(
+                  self.__run_case(
+                     "random_alphabet",
+                     alphabet_size,
+                     length,
+                     string_a,
+                     string_b,
+                     group in timed_out_groups,
+                  )
+               )
+               if data[-1]["status"] == "timeout":
+                  timed_out_groups.add(group)
 
-         # DNA remains a separate input category, measured at every length.
-         dna_group = ("dna", len(DNA_ALPHABET))
-         string_a = Study.rand_word(
-            DNA_ALPHABET, length, seed=Study.default_seed + 2 * length + 1
-         )
-         string_b = Study.rand_word(
-            DNA_ALPHABET, length, seed=Study.default_seed + 2 * length + 2
-         )
-         data.append(
-            self.__run_case(
-               "dna",
-               len(DNA_ALPHABET),
-               length,
-               string_a,
-               string_b,
-               dna_group in timed_out_groups,
+            dna_group = ("dna", len(DNA_ALPHABET))
+            string_a = Study.rand_word(
+               DNA_ALPHABET, length, seed=Study.default_seed + 2 * length + 1
             )
-         )
-         if data[-1]["status"] == "timeout":
-            timed_out_groups.add(dna_group)
+            string_b = Study.rand_word(
+               DNA_ALPHABET, length, seed=Study.default_seed + 2 * length + 2
+            )
+            data.append(
+               self.__run_case(
+                  "dna",
+                  len(DNA_ALPHABET),
+                  length,
+                  string_a,
+                  string_b,
+                  dna_group in timed_out_groups,
+               )
+            )
+            if data[-1]["status"] == "timeout":
+               timed_out_groups.add(dna_group)
 
       fields = [
          "input_type",
@@ -113,26 +138,46 @@ class CaseB5(Study):
          writer.writerows(data)
 
       self.__result_dir = result_dir
-      for alphabet_size in ALPHABET_SIZES:
-         self.__save_operation_graph(
-            data,
-            "random_alphabet",
-            alphabet_size,
-            f"b5_alphabet_{alphabet_size}_operations.png",
+      if input_path is not None:
+         observed_alphabet_sizes = sorted(
+            {int(row["alphabet_size"]) for row in data}
          )
-      self.__save_operation_graph(
-         data, "dna", len(DNA_ALPHABET), "b5_dna_operations.png"
-      )
+         for alphabet_size in observed_alphabet_sizes:
+            self.__save_operation_graph(
+               data,
+               "study_input",
+               alphabet_size,
+               f"b5_input_alphabet_{alphabet_size}_operations.png",
+            )
+      else:
+         observed_alphabet_sizes = ALPHABET_SIZES
+         for alphabet_size in ALPHABET_SIZES:
+            self.__save_operation_graph(
+               data,
+               "random_alphabet",
+               alphabet_size,
+               f"b5_alphabet_{alphabet_size}_operations.png",
+            )
+         self.__save_operation_graph(
+            data, "dna", len(DNA_ALPHABET), "b5_dna_operations.png"
+         )
 
       random_rows = [
          row
          for row in data
-         if row["input_type"] == "random_alphabet" and row["status"] == "completed"
+         if row["input_type"]
+         in ({"study_input"} if input_path is not None else {"random_alphabet"})
+         and row["status"] == "completed"
       ]
       if random_rows:
+         styles = ("o-", "s-", "^-", "D-", "v-", "P-")
          runtime_series = [
             Study.build_series(
-               f"Alphabet size {alphabet_size}",
+               (
+                  f"Observed alphabet size {alphabet_size}"
+                  if input_path is not None
+                  else f"Alphabet size {alphabet_size}"
+               ),
                [
                   row
                   for row in random_rows
@@ -140,9 +185,10 @@ class CaseB5(Study):
                ],
                "length",
                "run_time_ms",
-               style,
+               styles[index % len(styles)],
             )
-            for alphabet_size, style in zip(ALPHABET_SIZES, ("o-", "s-", "^-"))
+            for index, alphabet_size in enumerate(observed_alphabet_sizes)
+            if any(row["alphabet_size"] == alphabet_size for row in random_rows)
          ]
          runtime_figure = self.generate_graph(
             runtime_series,

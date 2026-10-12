@@ -13,15 +13,7 @@ SimilarityScore = Callable[[str, str], float]
 class SmithWaterEditDistance(EditDistanceEngine):
     """Smith–Waterman local alignment using length-dependent gap weights."""
 
-    def __init__(
-        self,
-        string_a: str,
-        string_b: str,
-        match_score: float = 1.0,
-        mismatch_score: float = -1.0 / 3.0,
-        gap_cost: GapCost | None = None,
-        similarity_score: SimilarityScore | None = None,
-    ) -> None:
+    def __init__(self, string_a: str, string_b: str, match_score: float = 1.0, mismatch_score: float = -1.0 / 3.0, gap_cost: GapCost | None = None, similarity_score: SimilarityScore | None = None,) -> None:
         super().__init__(string_a, string_b)
         self.match_score = match_score
         self.mismatch_score = mismatch_score

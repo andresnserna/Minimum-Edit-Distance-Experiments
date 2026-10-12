@@ -38,6 +38,30 @@ python -m edit_distance --input data/sample_verification.tsv --sub 1 --ins 1 --d
 
 The project also supports a test-only execution path for small verification cases, which will be added once the engine logic is implemented.
 
+## Running empirical studies from the CLI
+
+Pass exactly one study flag to run a study. An optional `*_study.tsv` file
+replaces the study's built-in generated input pairs. Use `--results_dir` to
+choose a custom top-level output directory; studies retain their own subfolder
+layout beneath it (including B4's per-scheme folders):
+
+```bash
+PYTHONPATH=src:. python -m edit_distance --caseb1 --input data/example_study.tsv --results_dir=results
+PYTHONPATH=src:. python -m edit_distance --caseb2 --input data/example_study.tsv --results_dir=results
+PYTHONPATH=src:. python -m edit_distance --caseb3 --input data/example_study.tsv --results_dir=results
+PYTHONPATH=src:. python -m edit_distance --case_cost_schemes --input data/example_study.tsv --results_dir=results
+PYTHONPATH=src:. python -m edit_distance --case_edge --input data/example_study.tsv --results_dir=results
+```
+
+The study TSV format is two tab-separated strings per row; blank lines and
+comment lines are ignored. `--case_edge` also works without `--input`, in which
+case it uses the study's generated controlled-alphabet and DNA cases. Without
+any study flag, `--input` remains required for a regular edit-distance run.
+Study outputs are written in the corresponding `study/results/case_*`
+directory by default. With `--results_dir=results`, for example, B1 writes to
+`results/case_b1/rand_word/`, and B4 writes to
+`results/case_b4/rand_word/scheme 1/` through `scheme 4/`.
+
 ## Smith–Waterman local alignment
 
 The `SmithWaterEditDistance` engine implements the local-similarity recurrence
@@ -60,6 +84,19 @@ callable can replace the match/mismatch score rule. The 0-based, half-open
 segments in the original inputs. The algorithm is also available through the
 CLI as `--impl smith-water`. Its `distance` field contains the local-alignment
 score (which may be fractional), not a global edit distance.
+
+To compare Smith–Waterman against the memoized and tabulated global
+edit-distance implementations on reproducible inputs containing a shared
+subsequence, run:
+
+```bash
+PYTHONPATH=src:. python -m study.study_sw
+```
+
+The study writes `sw_results.csv`, `sw_operation_counts.png`, and
+`sw_runtime.png` under `study/results/case_sw`. The CSV labels the Smith–Waterman
+value as a local score and records operation counts, runtime, input strings,
+and any timeout or worker error for each algorithm and input length.
 
 ## Project layout
 

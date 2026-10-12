@@ -20,6 +20,8 @@
 # (separate graphs of course). When does the ratio between consecutive points stabilize (if it does)?
 from __future__ import annotations
 import csv
+from pathlib import Path
+from edit_distance.io import InputParser
 from study.study import Study
 from edit_distance.table import TabulatedEditDistance
 
@@ -31,23 +33,58 @@ COUNTER_FIELDS = ("reads", "writes", "comparisons", "calls", "total_operations")
 class CaseB2(Study):
     USE_RANDOM_WORD = True
 
-    def run(self) -> None:
+    def run(
+        self,
+        input_path: str | None = None,
+        results_dir: Path | None = None,
+    ) -> None:
       """
       Run table on strings of growing length n, (|A| = |B| = n). Test the following values of n [10,20,40,80,160,320,640,1280]. Plot total_operations against n on log-log axes.
       Saves a CSV results table and comparison plots under study/results.
       """
-      result_dir = self.get_results_directory(self.USE_RANDOM_WORD)
+      result_dir = self.get_results_directory(
+         self.USE_RANDOM_WORD, results_root=results_dir
+      )
       data: list[dict[str, object]] = []   
       thread_timed_out = False
  
 
-      for length in INPUT_LENGTHS:
-         if self.USE_RANDOM_WORD:
-            string_a = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed)
-            string_b = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed + 1)
-         else:
-            string_a = "a" * length
-            string_b = "b" * length
+      input_pairs = (
+         InputParser.load_study_pairs(input_path)
+         if input_path is not None
+         else None
+      )
+      cases = (
+         [
+            (max(len(string_a), len(string_b)), string_a, string_b)
+            for string_a, string_b in input_pairs
+         ]
+         if input_pairs is not None
+         else [
+            (
+               length,
+               (
+                  Study.rand_word(
+                     Study.eng_alphabet_low, length, seed=Study.default_seed
+                  )
+                  if self.USE_RANDOM_WORD
+                  else "a" * length
+               ),
+               (
+                  Study.rand_word(
+                     Study.eng_alphabet_low,
+                     length,
+                     seed=Study.default_seed + 1,
+                  )
+                  if self.USE_RANDOM_WORD
+                  else "b" * length
+               ),
+            )
+            for length in INPUT_LENGTHS
+         ]
+      )
+
+      for length, string_a, string_b in cases:
 
          data_row: dict[str, object] = {
             "length": length,

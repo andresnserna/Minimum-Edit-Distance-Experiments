@@ -70,6 +70,7 @@ class Study:
       self,
       use_random_word: bool,
       scheme_name: str | None = None,
+      results_root: Path | None = None,
    ) -> Path:
       case_match = re.fullmatch(r"Case([A-Z]\d+)", type(self).__name__)
       if case_match is None:
@@ -78,7 +79,8 @@ class Study:
          )
 
       input_directory = "rand_word" if use_random_word else "no_rand_word"
-      results_directory = self.results_root / f"case_{case_match.group(1).lower()}" / input_directory
+      root = results_root if results_root is not None else self.results_root
+      results_directory = root / f"case_{case_match.group(1).lower()}" / input_directory
 
       if scheme_name is not None:
          scheme_match = re.fullmatch(r"S(\d+)", scheme_name, re.IGNORECASE)

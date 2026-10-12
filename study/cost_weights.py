@@ -45,6 +45,8 @@
 
 from __future__ import annotations
 import csv
+from pathlib import Path
+from edit_distance.io import InputParser
 from study.study import Study
 from edit_distance.memo import MemoizedEditDistance
 from edit_distance.table import TabulatedEditDistance
@@ -82,7 +84,11 @@ IMPRACTICAL_THRESHOLD = 30
 class CaseB4(Study):
    USE_RANDOM_WORD = True
 
-   def run(self) -> None:
+   def run(
+      self,
+      input_path: str | None = None,
+      results_dir: Path | None = None,
+   ) -> None:
       """
       Run each cost scheme against the same input set and record distance and edit-script composition.
       Report for each scheme and each string pair: the distance, and the composition of the optimal edit
@@ -90,21 +96,59 @@ class CaseB4(Study):
 
       Saves one CSV results table per cost scheme under study/results.
       """
-      result_root = self.get_results_directory(self.USE_RANDOM_WORD)
+      result_root = self.get_results_directory(
+         self.USE_RANDOM_WORD, results_root=results_dir
+      )
       data_by_scheme: dict[str, list[dict[str, object]]] = {}
+      input_pairs = (
+         InputParser.load_study_pairs(input_path)
+         if input_path is not None
+         else None
+      )
+      input_cases = (
+         [
+            (max(len(string_a), len(string_b)), string_a, string_b)
+            for string_a, string_b in input_pairs
+         ]
+         if input_pairs is not None
+         else [
+            (
+               length,
+               (
+                  Study.rand_word(
+                     Study.eng_alphabet_low,
+                     length,
+                     seed=Study.default_seed,
+                  )
+                  if self.USE_RANDOM_WORD
+                  else "a" * length
+               ),
+               (
+                  Study.rand_word(
+                     Study.eng_alphabet_low,
+                     length,
+                     seed=Study.default_seed + 1,
+                  )
+                  if self.USE_RANDOM_WORD
+                  else "b" * length
+               ),
+            )
+            for length in INPUT_LENGTHS
+         ]
+      )
 
       for scheme_name, scheme_costs in SCHEMES.items():
-         result_dir = self.get_results_directory(self.USE_RANDOM_WORD, scheme_name)
+         result_dir = self.get_results_directory(
+            self.USE_RANDOM_WORD,
+            scheme_name,
+            results_root=results_dir,
+         )
          scheme_data: list[dict[str, object]] = []
          timed_out = {name: False for name, _ in ALGORITHMS}
 
-         for pair_index, length in enumerate(INPUT_LENGTHS, start=1):
-            if self.USE_RANDOM_WORD:
-               string_a = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed)
-               string_b = Study.rand_word(Study.eng_alphabet_low, length, seed=Study.default_seed + 1)
-            else:
-               string_a = "a" * length
-               string_b = "b" * length
+         for pair_index, (length, string_a, string_b) in enumerate(
+            input_cases, start=1
+         ):
 
             data_row: dict[str, object] = {
                "scheme": scheme_name,

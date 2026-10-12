@@ -25,10 +25,12 @@ from dataclasses import dataclass
 class RuntimeConfig:
     """Runtime parameters for one command execution."""
 
-    input_path: str
+    input_path: str | None = None
     sub_cost: int = 1
     ins_cost: int = 1
     del_cost: int = 1
     impl: str = "table"
     verbose: bool = False
     counters: bool = False
+    study_case: str | None = None
+    results_dir: str | None = None

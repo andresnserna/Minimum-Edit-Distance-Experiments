@@ -1,7 +1,5 @@
 from __future__ import annotations
-
 import pytest
-
 from edit_distance import SmithWaterEditDistance
 from edit_distance.counters import Counters
 
